@@ -61,9 +61,12 @@ pub fn parse_records(buf: &[u8]) -> (Vec<RawNode>, ParseStats) {
             continue;
         }
 
+        // name_len 이 짝수임을 위에서 확인했으므로 남는 바이트는 없다.
         let units: Vec<u16> = rec[name_off..name_off + name_len]
-            .chunks_exact(2)
-            .map(|c| u16::from_le_bytes([c[0], c[1]]))
+            .as_chunks::<2>()
+            .0
+            .iter()
+            .map(|&c| u16::from_le_bytes(c))
             .collect();
         // 잘못된 서로게이트가 있어도 이름 하나 때문에 인덱싱을 멈출 수는 없다.
         let name = String::from_utf16_lossy(&units);

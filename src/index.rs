@@ -241,10 +241,8 @@ impl Index {
             stack.clear();
             let mut cur = node.file_id;
             let mut resolved = None;
-            loop {
-                let Some(n) = by_id.get(&cur) else {
-                    break; // 부모를 모른다 -> 미아
-                };
+            // by_id 에서 사라지면 부모를 모르는 항목이라 미아로 떨어진다.
+            while let Some(n) = by_id.get(&cur) {
                 stack.push(cur);
                 if let Some(&p) = placed.get(&n.parent_id) {
                     resolved = Some(p);

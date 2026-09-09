@@ -16,9 +16,10 @@ jobs:
         os: [ubuntu-latest, windows-latest]
     steps:
       - uses: actions/checkout@v4
+      # 버전은 rust-toolchain.toml 이 정한다 (로컬과 CI 가 갈리지 않게).
+      # 이 액션은 rustup 만 준비하고, cargo 가 고정 툴체인을 끌어온다.
       - uses: dtolnay/rust-toolchain@stable
-        with:
-          components: clippy, rustfmt
+      - run: rustup show active-toolchain
       - run: cargo fmt --check
       - run: cargo clippy --all-targets -- -D warnings
       - run: cargo test --all-targets

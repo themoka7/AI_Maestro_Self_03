@@ -134,8 +134,11 @@ mod tests {
         let (ix, st) = scan(std::slice::from_ref(&t.0), &ScanOptions::default());
         let p = paths(&ix);
         let root = t.0.to_string_lossy();
-        assert!(p.contains(&format!("{root}/src/main.rs")), "{p:?}");
-        assert!(p.contains(&format!("{root}/문서/보고서.hwp")), "{p:?}");
+        // 인덱스는 루트 표기에서 구분자를 고르므로, 기대값도 네이티브
+        // 구분자로 만든다. 이걸 `/` 로 못박으면 윈도우에서만 깨진다.
+        let s = std::path::MAIN_SEPARATOR;
+        assert!(p.contains(&format!("{root}{s}src{s}main.rs")), "{p:?}");
+        assert!(p.contains(&format!("{root}{s}문서{s}보고서.hwp")), "{p:?}");
         assert_eq!(st.files, 4);
         assert!(st.dirs >= 4);
     }

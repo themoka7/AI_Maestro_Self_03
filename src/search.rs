@@ -62,8 +62,8 @@ pub fn run(
                 .then_with(|| ix.path(x.idx).cmp(&ix.path(y.idx)))
         }),
         Sort::Name => hits.sort_by_key(|h| ix.name(h.idx).to_lowercase()),
-        Sort::Size => hits.sort_by(|x, y| ix.entry(y.idx).size.cmp(&ix.entry(x.idx).size)),
-        Sort::Date => hits.sort_by(|x, y| ix.entry(y.idx).mtime.cmp(&ix.entry(x.idx).mtime)),
+        Sort::Size => hits.sort_by_key(|x| std::cmp::Reverse(ix.entry(x.idx).size)),
+        Sort::Date => hits.sort_by_key(|x| std::cmp::Reverse(ix.entry(x.idx).mtime)),
     }
 
     let total = hits.len();

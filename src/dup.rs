@@ -141,7 +141,7 @@ pub fn find_duplicates(
     let mut size_groups: Vec<(u64, Vec<u32>)> =
         by_size.into_iter().filter(|(_, v)| v.len() >= 2).collect();
     // 결과 순서를 안정적으로 (큰 파일 먼저 — 회수 효과가 큰 순서)
-    size_groups.sort_by(|a, b| b.0.cmp(&a.0));
+    size_groups.sort_by_key(|a| std::cmp::Reverse(a.0));
 
     for (size, group) in size_groups {
         // 2 단계: 앞부분만 해시

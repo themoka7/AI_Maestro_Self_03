@@ -1,0 +1,6 @@
+# 툴체인을 고정한다. clippy 는 릴리스마다 새 lint 를 켜기 때문에,
+# 로컬과 CI 가 다른 버전을 쓰면 로컬은 통과하는데 CI 가 빨개진다.
+# 올릴 때는 여기만 바꾸고 새 lint 를 같이 처리한다.
+[toolchain]
+channel = "1.98.1"
+components = ["clippy", "rustfmt"]
