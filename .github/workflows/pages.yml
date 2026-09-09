@@ -70,7 +70,12 @@ jobs:
           test -s _site/index.html
           ! grep -q selftest.js _site/index.html
 
+      # enablement: 레포에 Pages 가 꺼져 있으면 이 액션이 켠다. 사람이
+      # Settings 에서 눌러야 하는 단계를 없앤다 — 레포를 다시 만들면 그
+      # 설정이 사라지는데, 그때마다 배포가 죽는 걸 겪었다.
       - uses: actions/configure-pages@v5
+        with:
+          enablement: true
       - uses: actions/upload-pages-artifact@v3
         with:
           path: _site
