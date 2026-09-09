@@ -88,6 +88,29 @@ const expect = new Map([
   const rep = await M.findDuplicates(ids, () => {});
   ok(rep.s1 === 5, `퍼널 1단계(크기 일치) = ${rep.s1} (기대 5: 4096×3 + 2048×2)`);
 
+  // ── ② 미션 뷰: 눈금 환산이 실제 수치와 일치해야 한다.
+  // "남은 거리 ÷ 속도 = 남은 시간" 이 안 맞으면 그건 장식일 뿐이다.
+  const TOTAL = 1000, DONE = 250, RATE = 50, ETA = (TOTAL - DONE) / RATE; // 15초
+  M.missionStart(TOTAL);
+  M.setProgress({ phase: 2, done: DONE, total: TOTAL, rate: RATE, eta: ETA,
+                  errors: 0, where: "", running: true });
+  M.missionDraw();
+  const txt = document.getElementById("missionStats").textContent;
+  const grab = (label) => {
+    const m = txt.match(new RegExp(label + "\\s*([\\d,\\.]+)"));
+    return m ? parseFloat(m[1].replace(/,/g, "")) : NaN;
+  };
+  const remainKm = grab("남은 거리"), kmh = grab("속도"), pct = grab("진행");
+  ok(Math.abs(remainKm - M.MOON_KM * 0.75) < 1, `남은 거리 = ${remainKm} (기대 ${M.MOON_KM * 0.75})`);
+  ok(Math.abs(pct - 25) < 0.05, `진행률 = ${pct}% (기대 25%)`);
+  const etaFromKm = (remainKm / kmh) * 3600;
+  ok(Math.abs(etaFromKm - ETA) < 0.05,
+     `남은 거리 ÷ 속도 = ${etaFromKm.toFixed(2)}초, 실제 ETA = ${ETA}초 — 일치해야 한다`);
+  const cv = document.getElementById("missionCanvas");
+  ok(cv.width > 0 && cv.height > 0, `캔버스 크기 ${cv.width}×${cv.height}`);
+  M.missionStop();
+  ok(document.getElementById("mission").hidden === true, "미션 뷰가 끝나면 숨는다");
+
   document.title = "SELFTEST:" + out.join(" | ");
   console.log(out.join("\n"));
 })().catch((e) => {
