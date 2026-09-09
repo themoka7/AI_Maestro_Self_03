@@ -107,7 +107,7 @@ fn handle(st: &mut State, line: &str) -> Result<bool, String> {
                 if arg.is_empty() {
                     return Err("경로를 줘야 한다 (예: :index C:\\)".into());
                 }
-                let args: Vec<String> = arg.split_whitespace().map(str::to_string).collect();
+                let args = index_args(arg);
                 crate::cmd_index(&args)?;
                 st.ix = crate::load_index()?;
                 st.last.clear();
@@ -147,6 +147,22 @@ fn handle(st: &mut State, line: &str) -> Result<bool, String> {
     Ok(false)
 }
 
+/// `:index` 의 인자를 쪼갠다.
+///
+/// 따옴표를 존중하고, 따옴표 없이 준 공백 포함 경로(`C:\Program Files`)도
+/// 실제로 디렉터리로 존재하면 하나로 본다. 셸이 없는 대화형에서는 사용자가
+/// 따옴표를 붙일 이유를 모르는 게 정상이다.
+fn index_args(arg: &str) -> Vec<String> {
+    let toks = crate::query::split_tokens(arg);
+    if toks.len() > 1
+        && !toks.iter().any(|t| t.starts_with('-'))
+        && std::path::Path::new(arg).is_dir()
+    {
+        return vec![arg.to_string()];
+    }
+    toks
+}
+
 fn open_nth(st: &State, n: usize) -> Result<(), String> {
     if st.last.is_empty() {
         return Err("먼저 검색을 해라".into());
@@ -159,4 +175,47 @@ fn open_nth(st: &State, n: usize) -> Result<(), String> {
     println!("열기: {path}");
     crate::cmd_hit(std::slice::from_ref(&path))?;
     crate::launch(&path)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn quoted_path_with_spaces_stays_one_argument() {
+        assert_eq!(
+            index_args("\"C:\\Program Files\" D:\\"),
+            vec!["C:\\Program Files", "D:\\"]
+        );
+    }
+
+    #[test]
+    fn flags_are_still_split_out() {
+        assert_eq!(
+            index_args("C:\\Users --exclude AppData"),
+            vec!["C:\\Users", "--exclude", "AppData"]
+        );
+    }
+
+    #[test]
+    fn unquoted_existing_directory_with_spaces_is_kept_whole() {
+        let dir = std::env::temp_dir().join(format!("mfind repl {}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let arg = dir.to_string_lossy().to_string();
+        assert!(arg.contains(' '), "공백 있는 임시 경로를 만들지 못했다");
+        assert_eq!(index_args(&arg), vec![arg.clone()]);
+        std::fs::remove_dir_all(&dir).ok();
+    }
+
+    #[test]
+    fn multiple_real_roots_are_not_merged() {
+        let a = std::env::temp_dir().join(format!("mfind-a-{}", std::process::id()));
+        let b = std::env::temp_dir().join(format!("mfind-b-{}", std::process::id()));
+        std::fs::create_dir_all(&a).unwrap();
+        std::fs::create_dir_all(&b).unwrap();
+        let arg = format!("{} {}", a.display(), b.display());
+        assert_eq!(index_args(&arg).len(), 2);
+        std::fs::remove_dir_all(&a).ok();
+        std::fs::remove_dir_all(&b).ok();
+    }
 }

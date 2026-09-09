@@ -238,7 +238,7 @@ fn parse_size(v: &str) -> Result<u64, String> {
 }
 
 /// 따옴표를 존중하면서 공백으로 자른다.
-fn split_tokens(s: &str) -> Vec<String> {
+pub fn split_tokens(s: &str) -> Vec<String> {
     let mut out = Vec::new();
     let mut cur = String::new();
     let mut quote: Option<char> = None;
