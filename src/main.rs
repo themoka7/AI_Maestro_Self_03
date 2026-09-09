@@ -75,7 +75,7 @@ fn main() -> ExitCode {
     let args: Vec<String> = std::env::args().skip(1).collect();
     let Some(cmd) = args.first().map(String::as_str) else {
         // 인자 없음 = 더블클릭이거나 그냥 실행. 사용법만 뱉고 창이 닫히면
-        // 아무 쓸모가 없으니 대화형으로 들어간다.
+        // 아무 의미가 없으니 대화형으로 들어간다.
         return finish(repl::run());
     };
     let rest = &args[1..];
