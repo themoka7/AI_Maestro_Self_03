@@ -40,6 +40,36 @@ jobs:
           grep -q '<title>mfind web</title>' _site/index.html
           echo "빌드 결과 $(wc -c < _site/index.html) bytes"
 
+      # 렌더만 되는 것과 동작하는 것은 다르다. 가짜 디렉터리 핸들로 2단계
+      # 인덱싱을 실제로 돌려 본다 — 자식 범위가 한 칸 어긋나면 엉뚱한 파일에
+      # 크기가 붙고 그건 곧 잘못된 중복 보고다. 실패하면 배포하지 않는다.
+      - name: 웹 자체 점검
+        run: |
+          cp web/selftest.js _site/
+          printf '\n<script src="selftest.js"></script>\n' >> _site/index.html
+          CHROME=$(command -v google-chrome || command -v chromium-browser || command -v chromium)
+          if [ -z "$CHROME" ]; then echo "크롬을 찾을 수 없다"; exit 1; fi
+          echo "브라우저: $CHROME"
+          "$CHROME" --headless=new --no-sandbox --disable-gpu --dump-dom \
+            --virtual-time-budget=20000 "file://$PWD/_site/index.html?selftest=1" > dom.html
+          TITLE=$(grep -o '<title>[^<]*</title>' dom.html | sed 's|</\?title>||g')
+          echo "$TITLE" | tr '|' '\n'
+          if ! echo "$TITLE" | grep -q SELFTEST; then
+            echo "자체 점검이 실행되지 않았다 (스크립트 오류일 수 있다)"; exit 1
+          fi
+          if echo "$TITLE" | grep -q FAIL; then
+            echo "자체 점검 실패"; exit 1
+          fi
+          echo "자체 점검 통과"
+
+      # 점검용으로 붙인 것을 지우고 배포본을 다시 만든다.
+      - name: 배포본 재생성
+        run: |
+          rm -rf _site dom.html
+          python3 web/build.py _site
+          test -s _site/index.html
+          ! grep -q selftest.js _site/index.html
+
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
