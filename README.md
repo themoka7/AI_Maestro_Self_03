@@ -113,14 +113,14 @@ cargo build --release --target x86_64-pc-windows-gnu    # 리눅스에서 크로
 의존성은 4 개뿐이다 (`blake3`, `serde`, `serde_json`, `walkdir`). 릴리스 빌드는
 LTO + strip 으로 700KB 남짓이고, 설치 과정도 레지스트리도 서비스도 없다.
 
-## 웹 버전 (`web/index.html`)
+## 웹 버전 (`web/app.html`)
 
 브라우저만으로 도는 한 장짜리 페이지다. 폴더를 허용하면 순회·검색·중복 탐지가
 전부 브라우저 안에서 일어나고, 아무것도 외부로 나가지 않는다.
 
 되는 것과 안 되는 것이 네이티브와 다르다.
 
-| | 네이티브 `mfind` | `web/index.html` |
+| | 네이티브 `mfind` | 웹 |
 |---|---|---|
 | 브라우저 | — | **Chrome·Edge 만** (`showDirectoryPicker`) |
 | 인덱싱 | MFT 일괄 또는 디렉터리 순회 | 디렉터리 순회만, 항목마다 IPC 왕복 |
@@ -138,6 +138,22 @@ LTO + strip 으로 700KB 남짓이고, 설치 과정도 레지스트리도 서�
 
 첫 화면은 예시 트리로 채워져 있다. IndexedDB 가 막힌 환경(시크릿 창, 사이트
 데이터 차단)에서도 화면은 뜬다 — 첫 프레임이 저장소를 기다리지 않는다.
+
+### 배포
+
+`main` 에 `web/**` 이 바뀌면 `Pages` 워크플로가 GitHub Pages 로 올린다.
+소스는 `web/app.html` 하나다 — 아티팩트는 조각을 받아 자기가 `<head>` 를
+붙이고, Pages 는 완전한 문서를 요구하므로 `web/build.py` 가 `web/shell.html`
+로 감싸 `_site/index.html` 을 만든다. 파일을 둘로 나누면 반드시 갈라지므로
+소스는 하나만 둔다.
+
+File System Access API 는 보안 컨텍스트를 요구한다. Pages 는 HTTPS 라
+그대로 동작하고, 로컬에서 열어 볼 때는 `file://` 이 아니라 localhost 로
+띄워야 한다:
+
+```sh
+python3 web/build.py _site && python3 -m http.server -d _site 8080
+```
 
 ## 인덱스 설계
 

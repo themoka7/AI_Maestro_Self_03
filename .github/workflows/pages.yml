@@ -1,0 +1,48 @@
+name: Pages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "web/**"
+      - ".github/workflows/pages.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# 배포가 겹치면 나중 것이 이긴다. 진행 중인 배포는 끊지 않는다.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: web/ 를 Pages 로 배포
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      # 아티팩트용 조각(web/app.html) 을 단독 문서로 감싼다.
+      # <meta charset> 이 없으면 한글이 깨지므로 이 단계가 필수다.
+      - name: 페이지 빌드
+        run: python3 web/build.py _site
+
+      - name: 결과 확인
+        run: |
+          test -s _site/index.html
+          grep -q '<meta charset="utf-8">' _site/index.html
+          grep -q '<title>mfind web</title>' _site/index.html
+          echo "빌드 결과 $(wc -c < _site/index.html) bytes"
+
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+      - id: deploy
+        uses: actions/deploy-pages@v4
