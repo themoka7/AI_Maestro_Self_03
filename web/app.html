@@ -292,6 +292,49 @@
   .foot code { font-family: var(--mono); font-size: 12px; color: var(--ink-2); }
   .foot b { color: var(--ink-2); }
 
+  /* 단계 사다리 — 이 도구는 의존관계가 있는 3단계다. 그게 화면에 보여야 한다. */
+  .ladder { display: flex; flex-direction: column; margin: -13px -14px; }
+  .lad {
+    display: grid; grid-template-columns: 1.5em 1fr; gap: 3px 9px;
+    padding: 12px 14px; border-bottom: 1px solid var(--line-soft);
+  }
+  .lad:last-child { border-bottom: 0; }
+  .lad.off { opacity: .55; }
+  .lad .no {
+    grid-row: 1 / span 4; font-family: var(--mono); font-size: 13px;
+    color: var(--faint); padding-top: 1px;
+  }
+  .lad.on .no { color: var(--accent); }
+  .lad .hd { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px; }
+  .lad .nm { font-family: var(--cond); font-weight: 700; font-size: 13.5px; }
+  .badge {
+    font-family: var(--cond); font-weight: 600; font-size: 10px;
+    letter-spacing: .07em; padding: 1px 6px; border-radius: 2px; white-space: nowrap;
+  }
+  .badge.done { background: var(--accent-wash); color: var(--accent); }
+  .badge.ready { border: 1px solid var(--accent); color: var(--accent); }
+  .badge.wait { border: 1px solid var(--line); color: var(--faint); }
+  .badge.run { background: var(--accent); color: var(--accent-ink); }
+  .badge.part { background: var(--dup-wash); color: var(--dup); }
+  .lad .gives { font-size: 12px; color: var(--ink-2); }
+  .lad .gives b { color: var(--ink); font-weight: 500; }
+  .lad .meta {
+    font-size: 11.5px; color: var(--faint); font-family: var(--mono);
+    word-break: break-all;
+  }
+  .lad .act { margin-top: 6px; display: flex; gap: 6px; flex-wrap: wrap; }
+
+  .hint { padding: 4px 0 0; margin: 0; font-size: 11.5px; color: var(--faint); }
+  .hint code { font-family: var(--mono); }
+
+  details.adv { margin-top: 2px; }
+  details.adv > summary {
+    cursor: pointer; font-family: var(--cond); font-weight: 600;
+    font-size: 12px; color: var(--muted); padding: 3px 0; width: fit-content;
+  }
+  details.adv > summary:hover { color: var(--accent); }
+  details.adv[open] > summary { color: var(--ink); }
+
   /* 진행 표시 */
   .prog { display: flex; flex-direction: column; gap: 8px; }
   .prog .phase {
@@ -340,7 +383,7 @@
 
   <div class="banner" id="banner">
     <b>예시 데이터</b>
-    <span>아래는 동작을 보여 주기 위한 가짜 트리다. <b>폴더 선택</b>을 누르면 실제 디스크로 바뀐다.</span>
+    <span>아래는 동작을 보여 주기 위한 가짜 트리다. 왼쪽 <b>① 폴더 선택</b>을 누르면 실제 디스크로 바뀐다.</span>
   </div>
 
   <div class="controls">
@@ -348,21 +391,9 @@
       <label class="qwrap">
         <input id="q" type="search" placeholder="이름으로 검색 —  사업계획   *.jpg   ext:hwp size:&gt;1mb   dup:" autocomplete="off" spellcheck="false" aria-label="검색 질의">
       </label>
-      <button class="btn primary" id="pickBtn" type="button">폴더 선택</button>
-      <button class="btn" id="dupBtn" type="button">중복 검사</button>
       <button class="btn danger" id="resetBtn" type="button">초기화</button>
     </div>
     <div class="optrow">
-      <label><input type="checkbox" id="withMeta"> 크기·시각도 수집 <i style="font-style:normal;color:var(--faint)">(2단계, 중복 검사에 필요)</i></label>
-      <label>동시 요청
-        <select id="conc">
-          <option value="8">8</option>
-          <option value="16">16</option>
-          <option value="32" selected>32</option>
-          <option value="64">64</option>
-          <option value="128">128</option>
-        </select>
-      </label>
       <label>정렬
         <select id="sort">
           <option value="freq">빈도</option>
@@ -371,14 +402,39 @@
           <option value="date">수정일</option>
         </select>
       </label>
-      <label style="flex:1 1 200px">제외
-        <input type="text" id="excl" value="AppData, Windows, Program Files, node_modules, .git, $RECYCLE.BIN, System Volume Information" aria-label="제외 패턴">
-      </label>
+      <details class="adv">
+        <summary>인덱싱 설정</summary>
+        <div class="optrow" style="padding-top:8px">
+          <label>동시 요청
+            <select id="conc">
+              <option value="8">8</option>
+              <option value="16">16</option>
+              <option value="32" selected>32</option>
+              <option value="64">64</option>
+              <option value="128">128</option>
+            </select>
+          </label>
+          <label style="flex:1 1 240px">제외할 폴더·파일
+            <input type="text" id="excl" value="AppData, Windows, Program Files, node_modules, .git, $RECYCLE.BIN, System Volume Information" aria-label="제외 패턴">
+          </label>
+        </div>
+        <p class="hint">
+          동시 요청은 한 번에 던지는 요청 수다. 브라우저 왕복 지연에 묶인 작업이라
+          이 값이 곧 속도다 — 느리면 64·128 로 올려 봐라.
+          <code>AppData</code>·<code>Windows</code> 를 빼 두는 이유는 항목 수가 폭발해서만이 아니라,
+          이 페이지가 브라우저 프로필과 <code>.ssh</code> 키까지 읽을 수 있게 되기 때문이다.
+        </p>
+      </details>
     </div>
   </div>
 
   <div class="body">
     <aside class="rail">
+      <section class="panel">
+        <h2>순서</h2>
+        <div class="ladder" id="steps"></div>
+      </section>
+
       <section class="panel">
         <h2 id="idxTitle">인덱스</h2>
         <div id="idxBody"></div>
@@ -402,6 +458,7 @@
       <div class="rhead">
         <h2 id="rTitle">검색 결과</h2>
         <span class="count" id="rCount"></span>
+        <span class="count" id="rNote"></span>
         <span class="spacer"></span>
         <button class="btn sm" id="viewBtn" type="button">묶음으로 보기</button>
       </div>
@@ -437,17 +494,23 @@
     </p>
     <p id="capNote"></p>
     <p>
-      <b>속도.</b> 인덱싱은 두 단계다. <b>1단계</b>는 이름만 모으고, 끝나면 검색이 바로 된다.
-      <b>2단계</b>는 파일마다 따로 읽어야 크기·시각을 알 수 있어(<code>getFile()</code> 왕복이
-      파일당 한 번) 훨씬 오래 걸린다 — 중복 검사에만 필요하므로 기본은 꺼져 있다.
-      두 단계 모두 요청을 동시에 여러 개 던진다. <b>동시 요청</b>을 올리면 빨라지지만
-      브라우저가 버거워지는 지점이 있으니 32 에서 시작해라. 네이티브 <code>mfind</code> 는
-      MFT 를 한 덩어리로 읽어서 이 왕복 자체가 없다.
+      <b>왜 3단계인가.</b> 각 단계의 비용이 자릿수로 다르기 때문이다.
+      <b>①</b> 은 디렉터리당 왕복 한 번으로 트리를 훑는다 — 이것만으로 이름 검색이 된다.
+      <b>②</b> 는 크기·시각을 알려면 파일을 하나씩 열어야 해서(<code>getFile()</code> 이
+      파일당 한 번) ① 보다 훨씬 오래 걸린다. <b>③</b> 은 그 위에서 실제 내용을 읽는다.
+      한 번에 다 하면 이름만 찾고 싶은 사람도 ②·③ 비용을 전부 내야 하므로 나눴다.
+      ② 는 ① 이 만든 트리를 재사용하므로 다시 훑지 않는다.
     </p>
     <p>
-      <b>진행률.</b> 1단계에는 %가 없다. 브라우저 API 는 순회하지 않고 개수를 알려주지
+      <b>진행률.</b> ① 에는 %가 없다. 브라우저 API 는 순회하지 않고 개수를 알려주지
       않으므로 분모가 존재하지 않는다 — 발견한 개수와 처리량만 보여 준다. 총계가
-      확정되는 2단계부터 진짜 %와 남은 시간이 나온다.
+      확정되는 ② 부터 진짜 %와 남은 시간이 나온다.
+    </p>
+    <p>
+      <b>③ 의 범위.</b> 지금 검색 결과 안에서만 돈다. 드라이브 전체를 해싱하지 않는다 —
+      검색을 좁히면 검사도 좁아진다. 누르기 전에 크기가 겹치는 후보가 몇 개이고 최대
+      얼마를 읽는지 왼쪽에 미리 나온다(크기로 묶는 것은 디스크를 읽지 않으므로 공짜다).
+      네이티브 <code>mfind</code> 는 MFT 를 한 덩어리로 읽어서 ①·② 의 왕복 자체가 없다.
     </p>
     <p>
       <b>제약.</b> 브라우저는 네이티브 앱을 띄울 수 없다. 그래서 파일을 여는 대신
@@ -520,6 +583,8 @@
       this.nFiles = 0;
       this.nDirs = 0;
       this.nameBytes = 0;
+      // 크기·시각이 채워진 파일 수. "2 단계를 했는지" 를 이걸로 판단한다.
+      this.metaCount = 0;
       this.roots = [];
       this.demo = false;
       this._pathCache = new Map();
@@ -541,7 +606,12 @@
       this.flags[i] = flags;
       this.size[i] = size;
       this.mtime[i] = mtime;
-      if (flags & FLAG_DIR) this.nDirs++; else this.nFiles++;
+      if (flags & FLAG_DIR) {
+        this.nDirs++;
+      } else {
+        this.nFiles++;
+        if (size !== UNKNOWN) this.metaCount++;
+      }
       this.nameBytes += name.length * 2 + 24;
       if (parent === NO_PARENT) this.roots.push(i);
       return i;
@@ -581,9 +651,14 @@
     /** 이름은 UTF-16 이라 대략 2바이트/글자 + 객체 오버헤드, 레코드는 29바이트. */
     bytes() { return this.nameBytes + this.n * 29; }
     recount() {
-      this.nFiles = 0; this.nDirs = 0; this.nameBytes = 0;
+      this.nFiles = 0; this.nDirs = 0; this.nameBytes = 0; this.metaCount = 0;
       for (let i = 0; i < this.n; i++) {
-        if (this.isDir(i)) this.nDirs++; else this.nFiles++;
+        if (this.isDir(i)) {
+          this.nDirs++;
+        } else {
+          this.nFiles++;
+          if (this.size[i] !== UNKNOWN) this.metaCount++;
+        }
         this.nameBytes += this.names[i].length * 2 + 24;
       }
     }
@@ -898,6 +973,7 @@
   let index = new Index();
   let rootHandle = null;
   let scanning = false, cancelScan = false;
+  let dupBusy = false;
   let scanStats = null;
   let progress = null;
   let view = "list";           // "list" | "groups"
@@ -1117,6 +1193,7 @@
       await inPool(jobs, conc(), async ([slot, fh]) => {
         try {
           const f = await fh.getFile();
+          if (ix.size[slot] === UNKNOWN) ix.metaCount++;
           ix.size[slot] = f.size;
           ix.mtime[slot] = Math.floor(f.lastModified / 1000);
         } catch { errors++; }
@@ -1172,6 +1249,129 @@
   }
 
   // ─────────────────────────────────────────────────────────────── 렌더
+  const rootLabel = () => (index.n > 0 ? index.names[0] : "—");
+
+  /**
+   * 해싱을 시작하기 전에 후보가 몇 개인지 미리 보여 준다.
+   * 크기로 묶는 것은 I/O 가 0 이라 공짜다 — 버튼을 누르기 전에
+   * "얼마나 읽을 일인지" 를 알 수 있어야 한다.
+   */
+  function dupPreview() {
+    const bySize = new Map();
+    let files = 0;
+    for (const h of lastHits) {
+      const i = h.i;
+      if (index.isDir(i)) continue;
+      const sz = index.size[i];
+      if (sz === UNKNOWN || sz < 1) continue;
+      files++;
+      bySize.set(sz, (bySize.get(sz) || 0) + 1);
+    }
+    let candidates = 0, maxRead = 0;
+    for (const [sz, n] of bySize) {
+      if (n < 2) continue;
+      candidates += n;
+      maxRead += n * Math.min(sz, QUICK_BYTES);
+    }
+    return { files, candidates, maxRead };
+  }
+
+  const badge = (kind, text) => `<span class="badge ${kind}">${esc(text)}</span>`;
+
+  function lad(o) {
+    const acts = (o.acts || []).map((a) =>
+      `<button class="btn sm${a.primary ? " primary" : ""}" type="button" data-act="${a.act}"${a.disabled ? " disabled" : ""}>${esc(a.label)}</button>`
+    ).join("");
+    return `
+      <div class="lad${o.on ? " on" : ""}${o.off ? " off" : ""}">
+        <span class="no">${o.no}</span>
+        <span class="hd"><span class="nm">${esc(o.name)}</span>${badge(o.state[0], o.state[1])}</span>
+        <span class="gives">${o.gives}</span>
+        <span class="meta">${o.meta}</span>
+        ${acts ? `<span class="act">${acts}</span>` : ""}
+      </div>`;
+  }
+
+  /**
+   * 세 단계는 서로 의존한다. 어떤 단계를 하면 무엇이 되는지, 무엇이 아직
+   * 잠겨 있고 왜 잠겼는지를 화면에 그린다. 버튼만 나열하면 사용자는
+   * 크기 칸의 "—" 가 고장인지 안 돌린 건지 알 수 없다.
+   */
+  function renderSteps() {
+    const files = index.fileCount();
+    const dirs = index.n - files;
+    const demo = index.demo;
+    const hasIndex = index.n > 1 && !demo;
+    const metaAll = files > 0 && index.metaCount >= files;
+    const metaSome = index.metaCount > 0;
+    const dupRan = !!(funnelState && funnelState.done);
+    const ph = progress && progress.running ? progress.phase : 0;
+    const busy = scanning || dupBusy;
+    const pv = dupPreview();
+
+    const one = lad({
+      no: 1, name: "폴더 인덱싱", on: ph === 1 || hasIndex,
+      state: ph === 1 ? ["run", "진행 중"]
+        : demo ? ["part", "예시 데이터"]
+        : hasIndex ? ["done", "완료"] : ["ready", "여기서 시작"],
+      gives: "<b>이름으로 검색</b>",
+      meta: ph === 1 ? "이름을 모으고 있다"
+        : demo ? "폴더를 고르면 실제 디스크로 바뀐다"
+        : hasIndex ? `${esc(rootLabel())} · 파일 ${num(files)} · 폴더 ${num(dirs)}`
+        : "Chrome·Edge 에서 폴더 하나를 고른다",
+      acts: ph === 1 ? [{ act: "cancel", label: "중단" }]
+        : busy ? []
+        : [{ act: "pick", label: hasIndex ? "다시 인덱싱" : "폴더 선택", primary: !hasIndex }],
+    });
+
+    const two = lad({
+      no: 2, name: "크기·시각 읽기", on: ph === 2 || metaAll, off: !hasIndex && !demo,
+      state: ph === 2 ? ["run", "진행 중"]
+        : metaAll ? ["done", "완료"]
+        : metaSome ? ["part", "일부만"]
+        : hasIndex ? ["ready", "할 수 있음"] : ["wait", "① 필요"],
+      gives: "<b>크기 정렬·필터</b>, 그리고 ③ 의 전제",
+      meta: ph === 2 ? "파일을 하나씩 읽고 있다"
+        : metaAll ? `파일 ${num(files)}개 전부`
+        : metaSome ? `${num(index.metaCount)} / ${num(files)} — 나머지는 크기 없음`
+        : hasIndex ? `파일 ${num(files)}개를 하나씩 읽는다 · 가장 오래 걸리는 단계`
+        : "① 을 먼저 해야 한다",
+      acts: ph === 2 ? [{ act: "cancel", label: "중단" }]
+        : (hasIndex && !busy) ? [{ act: "meta", label: metaSome ? "다시 읽기" : "실행", primary: !metaSome }]
+        : [],
+    });
+
+    const three = lad({
+      no: 3, name: "중복 찾기", on: dupBusy || dupRan, off: !metaSome,
+      state: dupBusy ? ["run", "진행 중"]
+        : dupRan ? (dupGroups.length ? ["done", `${num(dupGroups.length)}묶음`] : ["done", "중복 없음"])
+        : metaSome ? ["ready", "할 수 있음"]
+        : ["wait", "② 필요"],
+      gives: "<b>이름이 달라도 내용이 같은 파일</b>",
+      meta: dupBusy ? "해시로 좁히고 있다"
+        : !hasIndex && !demo ? "① 을 먼저 해야 한다"
+        : !metaSome ? "② 를 먼저 — 크기가 없으면 후보를 좁힐 수 없다"
+        // 이미 돌렸으면 예고가 아니라 결과를 보여 준다
+        : dupRan ? (dupGroups.length
+            ? (demo
+                ? `회수 가능 ${esc(human(funnelState.waste || 0))} — 예시 데이터라 실제로 읽지는 않았다`
+                : `회수 가능 ${esc(human(funnelState.waste || 0))} · 실제로 읽은 양 ${esc(human(funnelState.read || 0))}`)
+            : `후보 ${num(funnelState.s1 || 0)}개를 검사했지만 내용이 같은 짝은 없었다`)
+        : pv.candidates === 0
+          ? `현재 결과 ${num(pv.files)}개 중 크기가 겹치는 파일이 없다 — 검사할 게 없다`
+          : `현재 결과 ${num(pv.files)}개 중 후보 ${num(pv.candidates)}개 · 최대 ${esc(human(pv.maxRead))} 읽음`,
+      acts: (metaSome && !busy)
+        ? [{ act: "dup",
+             label: dupRan ? (pv.candidates ? `다시 검사 · 후보 ${num(pv.candidates)}개` : "검사할 후보 없음")
+                           : (pv.candidates ? `후보 ${num(pv.candidates)}개 검사` : "검사할 후보 없음"),
+             primary: pv.candidates > 0 && !dupRan, disabled: pv.candidates === 0 }]
+        : [],
+    });
+
+    $("steps").innerHTML = one + two + three +
+      `<div class="lad"><span class="no"></span><span class="meta">③ 은 <b>지금 검색 결과 안에서만</b> 돈다. 검색을 좁히면 검사도 좁아진다.</span></div>`;
+  }
+
   function eta(secs) {
     const s = Math.round(secs);
     if (s < 60) return `${s}초`;
@@ -1228,6 +1428,7 @@
       $("idxBody").innerHTML = `<dl class="readout">` + rows.map(([k, v, cls]) =>
         `<dt>${esc(k)}</dt><dd class="${cls}">${esc(v)}</dd>`).join("") + `</dl>`;
     }
+    renderSteps();
 
     // 퍼널
     const f = funnelState;
@@ -1245,7 +1446,7 @@
         <span class="bar"><i style="width:${Math.min(100, (s.ct / max) * 100).toFixed(1)}%"></i></span>
       </div>`).join("") + (f
         ? `<div class="stage"><span class="note">회수 가능 <b style="color:var(--dup)">${esc(human(f.waste || 0))}</b> · 전체 해시 ${num(f.hashed)}건 · 읽은 양 ${esc(human(f.read))}${f.errors && f.errors.length ? ` · 읽기 실패 ${num(f.errors.length)}건` : ""}</span></div>`
-        : `<div class="stage"><span class="note">중복 검사를 누르면 현재 결과 안에서만 돌린다. 드라이브 전체를 해싱하지 않는다.</span></div>`);
+        : `<div class="stage"><span class="note">아직 ③ 을 실행하지 않았다. 실행하면 각 단계에서 몇 개가 살아남았는지 여기에 나온다 — 크기가 다르면 내용도 다르므로 실제로 읽는 파일은 극히 일부다.</span></div>`);
 
     const now = nowSecs();
     const top = [...usage.values()].map((u) => [u, decay(u, now)]).sort((a, b) => b[1] - a[1]);
@@ -1254,6 +1455,12 @@
       ["최다 사용", top.length ? `${num(top[0][0].count)}회` : "—", "big"],
       ["최근 사용", top.length ? ago(now - top[0][0].last) : "—", ""],
     ].map(([k, v, cls]) => `<dt>${esc(k)}</dt><dd class="${cls}">${esc(v)}</dd>`).join("");
+  }
+
+  /** 해시 앞자리. 예시 모드의 내부 키(`demo:...`)는 보여 줄 게 아니다. */
+  function shortHash(h, n) {
+    const v = String(h || "");
+    return v.startsWith("demo:") ? "" : v.slice(0, n);
   }
 
   function highlight(path, name) {
@@ -1275,7 +1482,7 @@
             <span class="dupchip">중복 ${gi + 1}</span>
             <span class="sz">${esc(human(g.size))} × ${g.members.length}개</span>
             <span class="waste">낭비 ${esc(human(g.waste))}</span>
-            <span class="hash">${esc(g.hash.slice(0, 16))}</span>
+            <span class="hash">${esc(shortHash(g.hash, 16))}</span>
           </div>
           <div class="gmembers">
             ${g.members.map((m) => `
@@ -1293,38 +1500,44 @@
 
     if (!hits.length) {
       el.innerHTML = index.n === 0
-        ? `<div class="empty"><p><code>폴더 선택</code>으로 시작해라.</p><p>Chrome·Edge 만 지원한다.</p></div>`
+        ? `<div class="empty"><p>왼쪽 <b>① 폴더 선택</b>으로 시작해라.</p><p>Chrome·Edge 만 지원한다.</p></div>`
         : `<div class="empty"><p>일치하는 항목이 없다.</p><p>질의: <code>${esc($("q").value) || "(비어 있음)"}</code></p></div>`;
       return;
     }
+    // 데이터가 없는 컬럼은 아예 내보내지 않는다. "—" 로 채운 줄이 늘어서면
+    // 사용자는 그게 고장인지 아직 안 한 단계인지 구분할 수 없다.
+    const showSize = index.metaCount > 0;
+    const showDup = dupTags.size > 0 || !!(funnelState && funnelState.done);
     const shown = hits.slice(0, 300);
     const maxCount = Math.max(1, ...shown.map((h) => h.count));
+    const head = ["<th>경로</th>"]
+      .concat(showSize ? [`<th class="num">크기</th>`, `<th class="num">수정일</th>`] : [])
+      .concat([`<th class="num">빈도</th>`])
+      .concat(showDup ? [`<th class="num">중복</th>`] : [])
+      .concat([`<th class="num"></th>`]).join("");
     el.innerHTML = `
       <table>
-        <thead><tr>
-          <th>경로</th>
-          <th class="num">크기</th>
-          <th class="num">수정일</th>
-          <th class="num">빈도</th>
-          <th class="num">중복</th>
-          <th class="num"></th>
-        </tr></thead>
+        <thead><tr>${head}</tr></thead>
         <tbody>${shown.map((h) => {
           const g = dupTags.get(h.i);
           const isDir = index.isDir(h.i);
-          return `<tr>
-            <td class="path">${highlight(h.path, index.names[h.i])}</td>
-            <td class="num">${isDir ? "&lt;DIR&gt;" : esc(human(index.size[h.i]))}</td>
-            <td class="num">${esc(dateStr(index.mtime[h.i]))}</td>
-            <td class="num"><span class="freq${h.count ? "" : " zero"}">
+          const cells = [`<td class="path">${highlight(h.path, index.names[h.i])}</td>`];
+          if (showSize) {
+            cells.push(`<td class="num">${isDir ? "&lt;DIR&gt;" : esc(human(index.size[h.i]))}</td>`);
+            cells.push(`<td class="num">${esc(dateStr(index.mtime[h.i]))}</td>`);
+          }
+          cells.push(`<td class="num"><span class="freq${h.count ? "" : " zero"}">
               <span class="track"><i style="width:${((h.count / maxCount) * 100).toFixed(0)}%"></i></span>
-              <span class="n">${h.count ? num(h.count) : "—"}</span></span></td>
-            <td class="num">${g ? `<span class="dupchip">중복 ${g} <code>${esc((dupGroups[g - 1].hash || "").slice(0, 8))}</code></span>` : ""}</td>
-            <td class="num"><span class="rowacts">
+              <span class="n">${h.count ? num(h.count) : "—"}</span></span></td>`);
+          if (showDup) {
+            const hx = g ? shortHash(dupGroups[g - 1].hash, 8) : "";
+            cells.push(`<td class="num">${g ? `<span class="dupchip">중복 ${g}${hx ? ` <code>${esc(hx)}</code>` : ""}</span>` : ""}</td>`);
+          }
+          cells.push(`<td class="num"><span class="rowacts">
               <button type="button" data-copy="${esc(h.path)}">경로 복사</button>
               ${canDownload(h.i) ? `<button type="button" data-dl="${h.i}">내려받기</button>` : ""}
-            </span></td>
-          </tr>`;
+            </span></td>`);
+          return `<tr>${cells.join("")}</tr>`;
         }).join("")}</tbody>
       </table>`;
   }
@@ -1335,6 +1548,12 @@
       ? `${num(dupGroups.length)}개 묶음`
       : `${num(hits.length)}건${hits.length > 300 ? " · 300건 표시" : ""}`;
     $("rTitle").textContent = view === "groups" ? "중복 묶음" : "검색 결과";
+    const notes = [];
+    if (view !== "groups") {
+      if (index.metaCount === 0) notes.push("크기·수정일은 ② 를 실행하면 나온다");
+      else if (!(funnelState && funnelState.done)) notes.push("중복 표시는 ③ 을 실행하면 나온다");
+    }
+    $("rNote").textContent = notes.join(" · ");
     $("viewBtn").textContent = view === "groups" ? "목록으로 보기" : "묶음으로 보기";
     renderRows(hits);
     renderRail();
@@ -1396,7 +1615,19 @@
 
   $("viewBtn").addEventListener("click", () => { view = view === "groups" ? "list" : "groups"; render(); });
 
-  $("pickBtn").addEventListener("click", async () => {
+  // 단계 사다리의 버튼은 위임으로 받는다. 어떤 버튼이 있는지는 상태가 정한다.
+  $("steps").addEventListener("click", (e) => {
+    const b = e.target.closest("[data-act]");
+    if (!b || b.disabled) return;
+    switch (b.getAttribute("data-act")) {
+      case "pick": pickFolder(); break;
+      case "meta": runMetadata(); break;
+      case "dup": runDup(); break;
+      case "cancel": cancelScan = true; break;
+    }
+  });
+
+  async function pickFolder() {
     if (scanning) { cancelScan = true; return; }
     if (!window.showDirectoryPicker) {
       setBanner("warn", "이 브라우저는 안 된다",
@@ -1416,9 +1647,9 @@
       return;
     }
     rootHandle = handle;
-    kvSet("rootHandle", handle);
+    kvSet("rootHandle", handle).catch(() => {});
     await runScan();
-  });
+  }
 
   function persistIndex() {
     return kvSet("index", {
@@ -1434,13 +1665,11 @@
     }).catch(() => false);
   }
 
+  /** ① 이름 인덱싱. 크기는 건드리지 않는다 — 그건 ② 가 따로 한다. */
   async function runScan() {
     scanning = true; cancelScan = false;
-    $("pickBtn").textContent = "중단";
-    $("pickBtn").classList.remove("primary");
-    const withMeta = $("withMeta").checked;
+    render();
     try {
-      // ── 1 단계: 이름. 끝나면 검색이 바로 된다.
       setBanner("", "1단계 · 이름 수집",
         `<code>${esc(rootHandle.name)}</code> 를 훑고 있다. 전체 개수는 이 단계가 끝나야 나온다 — ` +
         `브라우저 API 가 미리 세어 주지 않는다.`);
@@ -1463,71 +1692,103 @@
         return;
       }
 
-      if (!withMeta) {
-        setBanner("", "이름 인덱스 완료",
-          `${base}. 크기·중복 검사가 필요하면 <b>크기·시각도 수집</b> 을 켜고 다시 돌려라 — ` +
-          `그쪽은 파일마다 따로 읽어야 해서 훨씬 오래 걸린다.`);
-        await persistIndex();
-        return;
-      }
-
-      // ── 2 단계: 크기·시각. 이제 총계를 알므로 진짜 진행률이 나온다.
-      const total = index.fileCount();
-      setBanner("", "2단계 · 크기·시각",
-        `${base}. 이제 파일 ${num(total)}개의 크기를 읽는다 — 진행률이 좌측에 나온다.`);
-      const meta = await fillMetadata(index, rootHandle, total);
-      progress = null;
-      scanStats = {
-        ...stats,
-        errors: stats.errors + meta.errors,
-        metaElapsed: meta.elapsed,
-        metaDone: meta.done,
-      };
-      setBanner(meta.errors ? "warn" : "", meta.cancelled ? "2단계 중단됨" : "인덱싱 완료",
-        `${base} · 크기 ${num(meta.done)}/${num(total)} · ${meta.elapsed.toFixed(1)}초 · ` +
-        `<b>${num(Math.round(meta.rate))} 파일/초</b>` +
-        (meta.errors ? ` · 읽기 실패 ${num(meta.errors)}` : "") +
-        (meta.cancelled ? " — 크기를 못 채운 파일은 중복 검사에서 빠진다." : ""));
+      setBanner("", "① 완료 — 이름으로 검색된다",
+        `${base}. 크기·수정일이나 중복 검사가 필요하면 왼쪽 <b>②</b> 를 실행해라 — ` +
+        `파일을 하나씩 읽어야 해서 이쪽이 훨씬 오래 걸린다.`);
       await persistIndex();
     } catch (err) {
-      progress = null;
-      setBanner("warn", "인덱싱 실패", esc(String((err && err.message) || err)));
+      setBanner("warn", "① 실패", esc(String((err && err.message) || err)));
     } finally {
       scanning = false;
       progress = null;
-      $("pickBtn").textContent = "폴더 선택";
-      $("pickBtn").classList.add("primary");
       render();
     }
   }
 
-  $("dupBtn").addEventListener("click", async () => {
-    const hits = lastHits.length ? lastHits : search();
-    const ids = hits.map((h) => h.i).filter((i) => !index.isDir(i));
-    if (!ids.length) { setBanner("warn", "검사할 파일이 없다", "먼저 검색으로 대상을 좁혀라."); return; }
-    if (!index.demo && index.size[ids[0]] === UNKNOWN) {
-      setBanner("warn", "크기 정보가 없다", "<b>크기·시각도 수집</b> 을 켜고 폴더를 다시 훑어라. 크기가 없으면 퍼널 1단계를 돌 수 없다.");
+  /** ② 크기·시각. ① 이 만든 트리를 재사용하므로 다시 훑지 않는다. */
+  async function runMetadata() {
+    if (scanning || dupBusy) return;
+    if (index.demo) {
+      setBanner("warn", "예시 데이터다", "먼저 <b>①</b> 로 실제 폴더를 인덱싱해라.");
       return;
     }
-    $("dupBtn").disabled = true;
-    $("dupBtn").textContent = "검사 중";
-    setBanner("", "중복 검사 중", `후보 ${num(ids.length)}개 — 크기 → 앞 16KiB → 전체 해시 순으로 좁힌다.`);
+    if (!rootHandle) {
+      setBanner("warn", "폴더 권한이 없다", "파일을 읽으려면 <b>①</b> 에서 폴더를 다시 허용해야 한다. 검색은 지금도 된다.");
+      return;
+    }
+    if (rootHandle.queryPermission) {
+      let perm = "prompt";
+      try { perm = await rootHandle.queryPermission({ mode: "read" }); } catch { /* 아래에서 처리 */ }
+      if (perm !== "granted" && rootHandle.requestPermission) {
+        try { perm = await rootHandle.requestPermission({ mode: "read" }); } catch { /* 아래에서 처리 */ }
+      }
+      if (perm !== "granted") {
+        setBanner("warn", "폴더 권한이 만료됐다", "<b>①</b> 에서 폴더를 다시 골라라. 세션마다 권한을 다시 확인해야 한다.");
+        return;
+      }
+    }
+    scanning = true; cancelScan = false;
+    const total = index.fileCount();
+    setBanner("", "② 크기·시각 읽는 중",
+      `파일 ${num(total)}개를 하나씩 읽는다. 총계를 알고 있으니 진행률과 남은 시간이 왼쪽에 나온다.`);
+    render();
+    try {
+      const meta = await fillMetadata(index, rootHandle, total);
+      progress = null;
+      scanStats = {
+        ...(scanStats || { files: total, dirs: index.n - total, skipped: 0, errors: 0, elapsed: 0, rate: 0 }),
+        metaElapsed: meta.elapsed,
+        metaDone: meta.done,
+      };
+      setBanner(meta.errors ? "warn" : "", meta.cancelled ? "② 중단됨" : "② 완료 — 크기·중복이 열렸다",
+        `크기 ${num(meta.done)}/${num(total)} · ${meta.elapsed.toFixed(1)}초 · ` +
+        `<b>${num(Math.round(meta.rate))} 파일/초</b>` +
+        (meta.errors ? ` · 읽기 실패 ${num(meta.errors)}` : "") +
+        (meta.cancelled ? " — 크기를 못 채운 파일은 ③ 에서 빠진다." : ". 이제 <b>③</b> 을 돌릴 수 있다."));
+      await persistIndex();
+    } catch (err) {
+      setBanner("warn", "② 실패", esc(String((err && err.message) || err)));
+    } finally {
+      scanning = false;
+      progress = null;
+      render();
+    }
+  }
+
+  /** ③ 중복. 지금 검색 결과 안에서만 돈다 — 드라이브 전체를 해싱하지 않는다. */
+  async function runDup() {
+    if (scanning || dupBusy) return;
+    const hits = lastHits.length ? lastHits : search();
+    const ids = hits.map((h) => h.i).filter((i) => !index.isDir(i));
+    if (!ids.length) {
+      setBanner("warn", "검사할 파일이 없다", "검색 결과에 파일이 없다. 질의를 넓혀라.");
+      return;
+    }
+    if (index.metaCount === 0) {
+      setBanner("warn", "크기 정보가 없다", "왼쪽 <b>②</b> 를 먼저 실행해라. 크기가 없으면 후보를 좁힐 수 없다.");
+      return;
+    }
+    const pv = dupPreview();
+    dupBusy = true;
+    render();
+    setBanner("", "③ 중복 검사 중",
+      `현재 결과 ${num(pv.files)}개 중 크기가 겹치는 후보 ${num(pv.candidates)}개 — ` +
+      `크기 → 앞 16KiB → 전체 해시 순으로 좁힌다.`);
     try {
       const res = await findDuplicates(ids, (p) => { funnelState = p; renderRail(); });
       view = dupGroups.length ? "groups" : "list";
-      setBanner(res.errors.length ? "warn" : "", dupGroups.length ? "중복 발견" : "중복 없음",
+      setBanner(res.errors.length ? "warn" : "", dupGroups.length ? "③ 완료 — 중복 발견" : "③ 완료 — 중복 없음",
         dupGroups.length
           ? `${num(dupGroups.length)}개 묶음 · 회수 가능 <b style="color:var(--dup)">${esc(human(res.waste))}</b> · 실제로 읽은 양 ${esc(human(res.read))}` +
             (res.errors.length ? ` · 읽기 실패 ${num(res.errors.length)}건` : "")
-          : `후보 ${num(ids.length)}개 중 내용이 같은 짝은 없었다.`);
+          : `후보 ${num(pv.candidates)}개 중 내용이 같은 짝은 없었다.`);
     } catch (err) {
-      setBanner("warn", "중복 검사 실패", esc(String(err && err.message || err)));
+      setBanner("warn", "③ 실패", esc(String((err && err.message) || err)));
     } finally {
-      $("dupBtn").disabled = false;
-      $("dupBtn").textContent = "중복 검사";
+      dupBusy = false;
       render();
     }
-  });
+  }
 
   $("resetBtn").addEventListener("click", async () => {
     cancelScan = true;
@@ -1565,7 +1826,6 @@
   $("capNote").innerHTML = supported
     ? `<b>이 브라우저는 지원된다.</b> <code>showDirectoryPicker</code> 사용 가능. 폴더를 한 번 허용하면 그 핸들이 IndexedDB 에 남지만, 세션마다 권한을 다시 확인해야 한다.`
     : `<b>이 브라우저는 지원되지 않는다.</b> <code>showDirectoryPicker</code> 가 없다 — Chrome 또는 Edge 로 열어야 실제 디스크를 읽을 수 있다. 아래 예시 데이터로 동작만 볼 수 있다.`;
-  if (!supported) $("pickBtn").title = "Chrome 또는 Edge 가 필요하다";
   index = buildDemo();
   seedDemoUsage();
   $("q").value = "file:";     // 디렉터리를 빼야 중복 칩이 첫 화면에 보인다
@@ -1622,7 +1882,7 @@
       setBanner(perm === "granted" ? "" : "warn", "저장된 인덱스",
         `항목 ${num(index.n)}개를 IndexedDB 에서 복원했다. ` + (perm === "granted"
           ? "폴더 권한도 살아 있어 중복 검사와 내려받기가 바로 된다."
-          : "파일을 <b>읽으려면</b> 권한을 다시 허용해야 한다 — <code>폴더 선택</code> 을 눌러라. 검색은 지금도 된다."));
+          : "파일을 <b>읽으려면</b> 권한을 다시 허용해야 한다 — 왼쪽 <b>① 다시 인덱싱</b> 을 눌러라. 검색은 지금도 된다."));
       render();
     }
   })();
