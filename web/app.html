@@ -21,6 +21,13 @@
     --dup-wash:    #f8e6dc;
     --ok:          #2f6b46;
     --shadow:      0 1px 2px rgba(20, 27, 30, .06), 0 8px 24px -16px rgba(20, 27, 30, .28);
+    /* 보고서의 데이터 마크. UI 액센트와 별개다 — 액센트(#0f6e7d)는 채도가
+       낮아 데이터 마크로는 회색으로 읽힌다(chroma floor 미달). 이 두 값은
+       라이트/다크 각각 밝기 밴드·채도·CVD 분리·대비를 검증기로 통과했다. */
+    --mark-keep:   #0b8ea3;
+    --mark-cut:    #b0451e;
+    --keep-wash:   #dff0f3;
+    --cut-wash:    #f9e7df;
 
     --mono: "IBM Plex Mono", "Cascadia Mono", Consolas, "D2Coding", monospace;
     --sans: "IBM Plex Sans", "Malgun Gothic", "Apple SD Gothic Neo", "Noto Sans KR", system-ui, sans-serif;
@@ -30,6 +37,10 @@
   }
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
+      --mark-keep:   #2aa3b6;
+      --mark-cut:    #d76a3c;
+      --keep-wash:   #10333a;
+      --cut-wash:    #35211a;
       --ground:      #0c1113;
       --surface:     #141d20;
       --surface-2:   #182327;
@@ -50,6 +61,10 @@
     }
   }
   :root[data-theme="dark"] {
+    --mark-keep:   #2aa3b6;
+    --mark-cut:    #d76a3c;
+    --keep-wash:   #10333a;
+    --cut-wash:    #35211a;
     --ground:      #0c1113;
     --surface:     #141d20;
     --surface-2:   #182327;
@@ -306,6 +321,95 @@
   .gmembers div { display: flex; gap: 8px; align-items: baseline; }
   .gmembers .path { flex: 1; }
 
+  /* ── 보고서 ─────────────────────────────────────────────────────────── */
+  .rep { padding: 16px 14px 20px; display: flex; flex-direction: column; gap: 22px; }
+  .rep section { min-width: 0; }
+  .rep h3 {
+    margin: 0 0 10px; font-family: var(--cond); font-weight: 700; font-size: 14px;
+    letter-spacing: .01em; display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px;
+  }
+  .rep h3 small { font-family: var(--sans); font-weight: 400; font-size: 11.5px; color: var(--faint); }
+  .rep p.note { margin: 0; font-size: 12px; color: var(--muted); max-width: 68ch; }
+  .rep p.note + p.note { margin-top: 6px; }
+
+  /* 요약 — 회수 가능이 이 보고서의 헤드라인이므로 그것만 크게 쓴다 */
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(148px, 1fr)); gap: 1px; background: var(--line-soft); }
+  .tile { background: var(--surface); padding: 12px 14px; }
+  .tile dt { font-size: 11.5px; color: var(--muted); margin-bottom: 3px; }
+  .tile dd {
+    margin: 0; font-family: var(--mono); font-variant-numeric: tabular-nums;
+    font-size: 19px; font-weight: 500; letter-spacing: -.01em;
+  }
+  .tile dd small { font-size: 12px; color: var(--muted); font-weight: 400; margin-left: 2px; }
+  .tile.hero dd { font-size: 30px; color: var(--mark-cut); }
+  .tile .sub { display: block; font-family: var(--sans); font-size: 11px; color: var(--faint); margin-top: 3px; }
+
+  /* 낭비 상위 — 단일 계열 크기 비교. 범례 없음(제목이 계열을 말한다), 직접 라벨 */
+  .wbars { display: flex; flex-direction: column; gap: 2px; }
+  .wbar {
+    display: grid; grid-template-columns: minmax(0, 15em) 1fr auto;
+    gap: 10px; align-items: center; padding: 3px 0;
+  }
+  .wbar .wl {
+    font-family: var(--mono); font-size: 12px; color: var(--ink-2);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .wbar .wt { height: 9px; background: var(--line-soft); border-radius: 0 4px 4px 0; }
+  .wbar .wt > i { display: block; height: 100%; background: var(--mark-cut); border-radius: 0 4px 4px 0; }
+  .wbar .wv {
+    font-family: var(--mono); font-variant-numeric: tabular-nums;
+    font-size: 12px; color: var(--ink); min-width: 5.8em; text-align: right;
+  }
+
+  /* 판단 배지 — 색만으로 구분하지 않는다. 글자가 먼저다. */
+  .verdict {
+    font-family: var(--cond); font-weight: 700; font-size: 10.5px;
+    letter-spacing: .05em; padding: 1px 6px; border-radius: 2px; white-space: nowrap;
+  }
+  .verdict.keep { background: var(--keep-wash); color: var(--mark-keep); }
+  .verdict.cut { background: var(--cut-wash); color: var(--mark-cut); }
+  .why { font-size: 11px; color: var(--faint); }
+
+  .rep table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .rep table thead th {
+    text-align: left; padding: 6px 10px 6px 0; background: none;
+    border-bottom: 1px solid var(--line); white-space: nowrap;
+  }
+  .rep table thead th.n { text-align: right; }
+  .rep table td { padding: 6px 10px 6px 0; border-bottom: 1px solid var(--line-soft); vertical-align: top; }
+  .rep table tr:last-child td { border-bottom: 0; }
+  .rep table td.p { font-family: var(--mono); word-break: break-all; }
+  .rep table td.n {
+    text-align: right; font-family: var(--mono);
+    font-variant-numeric: tabular-nums; white-space: nowrap;
+  }
+  .grp { border-bottom: 1px solid var(--line-soft); padding: 10px 0; }
+  .grp:last-child { border-bottom: 0; }
+  .grp .gh { display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: baseline; margin-bottom: 5px; }
+  .grp .gh .sz { font-family: var(--mono); font-size: 12.5px; }
+  .grp .gh .rec { color: var(--mark-cut); font-family: var(--cond); font-weight: 700; font-size: 12.5px; }
+  .grp .rows2 { display: flex; flex-direction: column; gap: 3px; }
+  .grp .rows2 > div { display: grid; grid-template-columns: 4.4em 1fr auto; gap: 8px; align-items: baseline; }
+  .grp .rows2 .p { font-family: var(--mono); font-size: 12px; word-break: break-all; }
+  .grp .rows2 .meta2 { font-family: var(--mono); font-size: 11.5px; color: var(--faint); white-space: nowrap; }
+
+  .seg { display: inline-flex; }
+  .seg .btn { border-radius: 0; margin-left: -1px; }
+  .seg .btn:first-child { border-radius: 3px 0 0 3px; margin-left: 0; }
+  .seg .btn:last-child { border-radius: 0 3px 3px 0; }
+  .seg .btn[aria-current="true"] {
+    background: var(--accent); border-color: var(--accent);
+    color: var(--accent-ink); position: relative; z-index: 1;
+  }
+  .seg .btn[aria-current="true"]:hover { color: var(--accent-ink); }
+
+  .repfoot { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .summary-box {
+    border-left: 3px solid var(--accent); background: var(--surface-2);
+    padding: 11px 13px; border-radius: 0 3px 3px 0; font-size: 12.5px;
+    color: var(--ink-2); white-space: pre-wrap; max-width: 74ch;
+  }
+
   /* ── 문법 참조 ───────────────────────────────────────────────────────── */
   .syntax { margin-top: 18px; }
   .syntax table { font-size: 12.5px; }
@@ -443,6 +547,8 @@
       <label class="qwrap">
         <input id="q" type="search" placeholder="이름으로 검색 —  사업계획   *.jpg   ext:hwp size:&gt;1mb   dup:" autocomplete="off" spellcheck="false" aria-label="검색 질의">
       </label>
+      <button class="btn" id="nlBtn" type="button" hidden
+              title="적어 둔 말을 이 도구의 질의 문법으로 바꾼다">자연어로</button>
       <button class="btn danger" id="resetBtn" type="button">초기화</button>
     </div>
     <div class="optrow">
@@ -523,7 +629,11 @@
         <span class="count" id="rCount"></span>
         <span class="count" id="rNote"></span>
         <span class="spacer"></span>
-        <button class="btn sm" id="viewBtn" type="button">묶음으로 보기</button>
+        <span class="seg" id="viewSeg" role="group" aria-label="보기 전환">
+          <button class="btn sm" type="button" data-view="list">목록</button>
+          <button class="btn sm" type="button" data-view="groups">중복 묶음</button>
+          <button class="btn sm" type="button" data-view="report">보고서</button>
+        </span>
       </div>
       <div class="rows" id="rows"></div>
     </main>
@@ -1067,7 +1177,15 @@
     mk(docs, "2026_사업계획_최종_v2.hwp", false, 2_310_144, 12, "plan-a");
     mk(desk, "사업계획_진짜최종.hwp", false, 2_310_144, 9, "plan-a");
     mk(docs, "2025_결산보고.hwp", false, 884_736, 200, "settle");
-    mk(docs, "회의록_0312.docx", false, 41_231, 6, "minutes");
+
+    // 버전 계열 예시 — 내용이 서로 달라 해시로는 안 잡힌다.
+    // 이름 규칙만으로 "같은 문서의 계보" 를 추정하는 쪽이 잡아야 하는 것.
+    mk(docs, "회의록_0312.docx", false, 41_231, 6, "minutes-1");
+    mk(docs, "회의록_0312_수정.docx", false, 43_902, 5, "minutes-2");
+    mk(desk, "회의록_0312_최종.docx", false, 44_180, 4, "minutes-3");
+
+    // 오래 안 쓴 대용량 예시
+    mk(dbk, "2023_워크숍_영상.mp4", false, 1_248_003_072, 700, "video-1");
 
     // 이름이 전혀 안 겹치는 같은 사진
     mk(jeju, "IMG_0421.JPG", false, 4_812_692, 400, "jeju-1");
@@ -1655,6 +1773,136 @@
     return v.startsWith("demo:") ? "" : v.slice(0, n);
   }
 
+  // ── 판단 ─────────────────────────────────────────────────────────────
+  /**
+   * 중복 묶음에서 남길 하나를 고른다. 규칙을 고정하고 **근거를 함께 낸다** —
+   * 왜 그 파일인지 사람이 검증할 수 없으면 제안은 쓸 수 없다.
+   *
+   *   1) 사용 빈도가 가장 높은 것   실제로 쓰고 있는 사본
+   *   2) 동률이면 가장 최근 수정     최신일 가능성
+   *   3) 동률이면 경로가 짧은 것     백업 사본보다 원본일 가능성
+   */
+  function pickKeeper(members) {
+    let best = null;
+    for (const i of members) {
+      const path = index.path(i);
+      const c = { i, cnt: countOf(path), mt: index.mtime[i], len: path.length };
+      if (!best) { best = c; continue; }
+      if (c.cnt !== best.cnt) { if (c.cnt > best.cnt) best = c; continue; }
+      if (c.mt !== best.mt) { if (c.mt > best.mt) best = c; continue; }
+      if (c.len < best.len) best = c;
+    }
+    // 어느 규칙이 결정했는지 되짚어 근거 문장을 만든다.
+    const cnts = members.map((i) => countOf(index.path(i)));
+    const top = Math.max(...cnts);
+    let why;
+    if (top > 0 && cnts.filter((c) => c === top).length === 1) {
+      why = `사용 ${num(top)}회 — 가장 많이 열었다`;
+    } else {
+      const mts = members.map((i) => index.mtime[i]);
+      const newest = Math.max(...mts);
+      if (newest > 0 && mts.filter((m) => m === newest).length === 1) {
+        why = `${dateStr(newest)} 수정 — 가장 최신`;
+      } else {
+        why = "경로가 가장 짧다 — 사본보다 원본일 가능성";
+      }
+    }
+    return { keeper: best.i, why };
+  }
+
+  // 이름에서 버전 표식을 떼어 같은 문서의 계열을 찾는다.
+  // 해시는 바이트가 같은 것만 잡는다. 실무에서 더 흔한 건 `최종`/`최종_v2`/
+  // `진짜최종` 처럼 내용은 다르고 계보는 같은 뭉치다 — 이건 **추정**이다.
+  const VER_STRIP = [
+    /\s*\(\d{1,3}\)$/,
+    /[-_ ]?(복사본|사본|copy)$/i,
+    /[-_ ]?v\d{1,3}$/i,
+    /[-_ ]?(최종본|최종|진짜최종|찐최종|final|fin|fix|수정본|수정|보완|검토|초안|draft|rev)$/i,
+    /[-_ ]?\d{4}[-._]\d{2}[-._]\d{2}$/,
+    /[-_ ]?\d{6,8}$/,
+  ];
+  function baseStem(name) {
+    const dot = name.lastIndexOf(".");
+    let stem = dot > 0 ? name.slice(0, dot) : name;
+    const ext = dot > 0 ? name.slice(dot + 1).toLowerCase() : "";
+    for (let round = 0; round < 6; round++) {
+      let changed = false;
+      for (const re of VER_STRIP) {
+        const next = stem.replace(re, "");
+        if (next !== stem && next.trim().length >= 2) { stem = next; changed = true; }
+      }
+      if (!changed) break;
+    }
+    return { key: stem.toLowerCase().replace(/[\s_\-.]/g, "") + "\u0000" + ext, stem: stem.trim(), ext };
+  }
+
+  function versionFamilies(fileIds) {
+    const by = new Map();
+    for (const i of fileIds) {
+      const { key, stem, ext } = baseStem(index.names[i]);
+      if (!stem || stem.length < 2) continue;
+      if (!by.has(key)) by.set(key, { stem, ext, members: [] });
+      by.get(key).members.push(i);
+    }
+    const out = [];
+    for (const fam of by.values()) {
+      if (fam.members.length < 2) continue;
+      // 이미 해시로 확정된 한 묶음이면 여기서 또 보고할 게 없다.
+      const gs = new Set(fam.members.map((i) => dupTags.get(i) ?? 0));
+      if (gs.size === 1 && !gs.has(0)) continue;
+      fam.members.sort((a, b) => index.mtime[b] - index.mtime[a]);
+      fam.latest = fam.members[0];
+      fam.dirs = new Set(fam.members.map((i) => index.parent[i])).size;
+      out.push(fam);
+    }
+    out.sort((a, b) => b.members.length - a.members.length || a.stem.localeCompare(b.stem));
+    return out;
+  }
+
+  const YEAR = 365 * 86400;
+
+  /** 보고서에 필요한 모든 것을 한 번에 계산한다. */
+  function buildReport() {
+    const now = nowSecs();
+    const fileIds = [];
+    let totalBytes = 0, sized = 0;
+    for (let i = 0; i < index.n; i++) {
+      if (index.isDir(i) || index.parent[i] === NO_PARENT) continue;
+      fileIds.push(i);
+      if (index.size[i] !== UNKNOWN) { totalBytes += index.size[i]; sized++; }
+    }
+
+    const groups = dupGroups.map((g, gi) => {
+      const { keeper, why } = pickKeeper(g.members);
+      return {
+        no: gi + 1, size: g.size, waste: g.waste, hash: g.hash,
+        keeper, why, cut: g.members.filter((i) => i !== keeper), members: g.members,
+      };
+    });
+    const waste = groups.reduce((a, g) => a + g.waste, 0);
+    const cutCount = groups.reduce((a, g) => a + g.cut.length, 0);
+
+    const stale = sized
+      ? fileIds
+          .filter((i) => index.size[i] !== UNKNOWN && index.size[i] >= 10 * 1024 * 1024
+                      && index.mtime[i] > 0 && now - index.mtime[i] > YEAR
+                      && countOf(index.path(i)) === 0)
+          .sort((a, b) => index.size[b] - index.size[a])
+          .slice(0, 15)
+      : [];
+
+    return {
+      files: fileIds.length, totalBytes, sized,
+      groups, waste, cutCount,
+      families: versionFamilies(fileIds).slice(0, 12),
+      stale, staleBytes: stale.reduce((a, i) => a + index.size[i], 0),
+      top: usage.size ? [...usage.values()].map((u) => [u, decay(u, now)])
+            .sort((a, b) => b[1] - a[1]).slice(0, 10) : [],
+      hasMeta: index.metaCount > 0,
+      hasDup: !!(funnelState && funnelState.done),
+    };
+  }
+
   function highlight(path, name) {
     const at = path.lastIndexOf(name);
     if (at < 0) return esc(path);
@@ -1663,6 +1911,14 @@
 
   function renderRows(hits) {
     const el = $("rows");
+    if (view === "report") {
+      if (index.n === 0) {
+        el.innerHTML = `<div class="empty"><p>인덱스가 없어 보고할 것이 없다.</p><p><b>①</b> 을 먼저 실행해라.</p></div>`;
+        return;
+      }
+      renderReport(el);
+      return;
+    }
     if (view === "groups") {
       if (!dupGroups.length) {
         el.innerHTML = `<div class="empty"><p>중복 묶음이 없다.</p><p><code>중복 검사</code>를 먼저 돌려라.</p></div>`;
@@ -1755,22 +2011,169 @@
       </table>`;
   }
 
+  // ── 보고서 ──────────────────────────────────────────────────────────
+  function renderReport(el) {
+    const r = buildReport();
+    const out = [];
+
+    const tile = (k, v, sub, hero) =>
+      `<div class="tile${hero ? " hero" : ""}"><dt>${esc(k)}</dt><dd>${v}` +
+      `${sub ? `<span class="sub">${esc(sub)}</span>` : ""}</dd></div>`;
+
+    out.push(`<section>
+      <h3>요약</h3>
+      <div class="tiles">
+        ${tile("인덱스된 파일", num(r.files), r.hasMeta ? `총 ${human(r.totalBytes)}` : "크기 미수집")}
+        ${tile("회수 가능", r.hasDup ? esc(human(r.waste)) : "—",
+               r.hasDup ? `중복 ${num(r.groups.length)}묶음` : "③ 을 실행하면 나온다", true)}
+        ${tile("정리 후보", r.hasDup ? `${num(r.cutCount)}<small>개</small>` : "—", "남길 것을 뺀 수")}
+        ${tile("버전 계열 추정", `${num(r.families.length)}<small>뭉치</small>`, "이름이 비슷한 묶음")}
+      </div>
+    </section>`);
+
+    if (!r.hasMeta) {
+      out.push(`<section><p class="note"><b>② 크기·시각 읽기</b> 를 실행하지 않아 용량·중복·오래된 파일을 계산할 수 없다. 아래 <b>자주 쓰는 파일</b> 만 나온다.</p></section>`);
+    } else if (!r.hasDup) {
+      out.push(`<section><p class="note"><b>③ 중복 찾기</b> 를 실행하면 정리 제안이 여기에 채워진다. 지금은 크기 기준 통계만 나온다.</p></section>`);
+    }
+
+    // 낭비가 몇 묶음에 몰려 있는지 — 상위 몇 개만 정리하면 되는지 판단하는 데 쓴다
+    if (r.groups.length > 1) {
+      const top = r.groups.slice(0, 8);
+      const max = Math.max(...top.map((g) => g.waste), 1);
+      out.push(`<section>
+        <h3>낭비가 큰 묶음 <small>상위 ${top.length}개 · 회수 가능 바이트</small></h3>
+        <div class="wbars">${top.map((g) => {
+          const nm = index.names[g.keeper];
+          const tip = `묶음 ${g.no} · ${g.members.length}개 파일 · 각 ${human(g.size)} · 회수 ${human(g.waste)}`;
+          return `<div class="wbar" title="${esc(tip)}">
+            <span class="wl">${esc(nm)}</span>
+            <span class="wt"><i style="width:${((g.waste / max) * 100).toFixed(1)}%"></i></span>
+            <span class="wv">${esc(human(g.waste))}</span>
+          </div>`;
+        }).join("")}</div>
+        ${r.groups.length > top.length
+          ? `<p class="note" style="margin-top:8px">나머지 ${num(r.groups.length - top.length)}묶음의 합은 ${esc(human(r.waste - top.reduce((a, g) => a + g.waste, 0)))} 다.</p>`
+          : ""}
+      </section>`);
+    }
+
+    if (r.groups.length) {
+      out.push(`<section>
+        <h3>정리 제안 <small>내용이 같은 것만 — 해시로 확정</small></h3>
+        <p class="note">각 묶음에서 남길 하나를 규칙으로 골랐다: <b>사용 빈도 → 최근 수정 → 짧은 경로</b> 순. 근거를 함께 적었으니 확인하고 판단해라.</p>
+        <div style="margin-top:10px">${r.groups.slice(0, 40).map((g) => `
+          <div class="grp">
+            <div class="gh">
+              <span class="verdict cut">묶음 ${g.no}</span>
+              <span class="sz">${esc(human(g.size))} × ${g.members.length}개</span>
+              <span class="rec">회수 ${esc(human(g.waste))}</span>
+            </div>
+            <div class="rows2">
+              <div>
+                <span class="verdict keep">남김</span>
+                <span class="p">${esc(index.path(g.keeper))}</span>
+                <span class="meta2">${esc(g.why)}</span>
+              </div>
+              ${g.cut.map((i) => `<div>
+                <span class="verdict cut">정리</span>
+                <span class="p">${esc(index.path(i))}</span>
+                <span class="meta2">${countOf(index.path(i)) ? `사용 ${num(countOf(index.path(i)))}회` : "사용 기록 없음"}</span>
+              </div>`).join("")}
+            </div>
+          </div>`).join("")}</div>
+        ${r.groups.length > 40 ? `<p class="note">... ${num(r.groups.length - 40)}묶음 더 있다. 내보내기에는 전부 담긴다.</p>` : ""}
+      </section>`);
+    }
+
+    if (r.families.length) {
+      out.push(`<section>
+        <h3>버전 계열 <small>추정 — 이름으로만 판단했다</small></h3>
+        <p class="note">해시는 바이트가 같은 것만 잡는다. 이건 <code>최종</code>·<code>최종_v2</code>·<code>진짜최종</code> 처럼 <b>내용은 다르고 계보는 같은</b> 뭉치다. 규칙(버전 표식 제거)으로만 묶었으므로 <b>확정이 아니다</b> — 직접 확인해라.</p>
+        <table style="margin-top:8px"><thead><tr>
+          <th>계열</th><th class="n">개수</th><th class="n">폴더</th><th>가장 최근</th>
+        </tr></thead><tbody>${r.families.map((f) => `<tr>
+          <td class="p">${esc(f.stem)}${f.ext ? `.${esc(f.ext)}` : ""}</td>
+          <td class="n">${f.members.length}</td>
+          <td class="n">${f.dirs}</td>
+          <td class="p">${esc(index.names[f.latest])} <span class="why">${esc(dateStr(index.mtime[f.latest]))}</span></td>
+        </tr>`).join("")}</tbody></table>
+      </section>`);
+    }
+
+    if (r.stale.length) {
+      out.push(`<section>
+        <h3>오래 안 쓴 대용량 <small>10MB 이상 · 1년+ 미수정 · 사용 기록 없음</small></h3>
+        <table><thead><tr><th>경로</th><th class="n">크기</th><th class="n">수정일</th></tr></thead>
+        <tbody>${r.stale.map((i) => `<tr>
+          <td class="p">${esc(index.path(i))}</td>
+          <td class="n">${esc(human(index.size[i]))}</td>
+          <td class="n">${esc(dateStr(index.mtime[i]))}</td>
+        </tr>`).join("")}</tbody></table>
+        <p class="note" style="margin-top:8px">합 ${esc(human(r.staleBytes))}. 중복은 아니므로 지우면 되돌릴 수 없다 — 확인하고 판단해라.</p>
+      </section>`);
+    }
+
+    if (r.top.length) {
+      out.push(`<section>
+        <h3>자주 쓰는 파일 <small>반감기 30일 점수 순</small></h3>
+        <table><thead><tr><th>경로</th><th class="n">횟수</th><th class="n">점수</th><th class="n">마지막</th></tr></thead>
+        <tbody>${r.top.map(([u, sc]) => `<tr>
+          <td class="p">${esc(u.path)}</td>
+          <td class="n">${num(u.count)}</td>
+          <td class="n">${sc.toFixed(2)}</td>
+          <td class="n">${esc(ago(nowSecs() - u.last))}</td>
+        </tr>`).join("")}</tbody></table>
+      </section>`);
+    }
+
+    out.push(`<section>
+      <div class="repfoot">
+        ${r.groups.length ? `<button class="btn sm" type="button" data-act="csv">정리 계획 내보내기 (CSV)</button>` : ""}
+        <span id="llmSlot"></span>
+      </div>
+      <p class="note" style="margin-top:10px"><b>이 페이지는 파일을 지우거나 옮기지 않는다.</b> 브라우저에 그 권한을 요청하지 않았고, 요청할 계획도 없다. 목록을 내보내서 사람이 확인하고 실행하는 것까지가 여기의 역할이다.</p>
+      <p class="note">중복은 <b>해시로 확정</b>이고, 버전 계열은 <b>이름 기반 추정</b>이다. 두 개의 신뢰도가 다르므로 섹션을 나눠 두었다.</p>
+    </section>`);
+
+    el.innerHTML = `<div class="rep">${out.join("")}</div>`;
+    mountLlm();
+  }
+
+  function reportCsv() {
+    const r = buildReport();
+    const esc2 = (v) => {
+      const t = String(v ?? "");
+      return /[",\n]/.test(t) ? `"${t.replace(/"/g, '""')}"` : t;
+    };
+    const rows = [["조치", "경로", "크기(바이트)", "묶음", "근거"]];
+    for (const g of r.groups) {
+      rows.push(["남김", index.path(g.keeper), g.size, g.no, g.why]);
+      for (const i of g.cut) rows.push(["정리", index.path(i), g.size, g.no, ""]);
+    }
+    // 엑셀이 UTF-8 CSV 를 한글로 열도록 BOM 을 붙인다.
+    return "\uFEFF" + rows.map((r2) => r2.map(esc2).join(",")).join("\r\n") + "\r\n";
+  }
+
   function render() {
     const hits = search();
     const bare = index.n === 0;
-    $("rCount").textContent = bare ? ""
+    $("rCount").textContent = bare || view === "report" ? ""
       : view === "groups" ? `${num(dupGroups.length)}개 묶음`
       : `${num(hits.length)}건${hits.length > 300 ? " · 300건 표시" : ""}`;
     $("rTitle").textContent = bare ? "시작하기"
-      : view === "groups" ? "중복 묶음" : "검색 결과";
+      : view === "report" ? "보고서" : view === "groups" ? "중복 묶음" : "검색 결과";
     const notes = [];
-    if (!bare && view !== "groups") {
+    if (!bare && view === "list") {
       if (index.metaCount === 0) notes.push("크기·수정일은 ② 를 실행하면 나온다");
       else if (!(funnelState && funnelState.done)) notes.push("중복 표시는 ③ 을 실행하면 나온다");
     }
     $("rNote").textContent = notes.join(" · ");
-    $("viewBtn").textContent = view === "groups" ? "목록으로 보기" : "묶음으로 보기";
-    $("viewBtn").hidden = bare;
+    $("viewSeg").hidden = bare;
+    for (const b of $("viewSeg").querySelectorAll("[data-view]")) {
+      if (b.getAttribute("data-view") === view) b.setAttribute("aria-current", "true");
+      else b.removeAttribute("aria-current");
+    }
     renderRows(hits);
     renderRail();
   }
@@ -1786,8 +2189,11 @@
   $("rows").addEventListener("click", async (e) => {
     const actBtn = e.target.closest("[data-act]");
     if (actBtn) {
-      if (actBtn.getAttribute("data-act") === "pick") pickFolder();
-      else if (actBtn.getAttribute("data-act") === "demo") loadDemo();
+      const act = actBtn.getAttribute("data-act");
+      if (act === "pick") pickFolder();
+      else if (act === "demo") loadDemo();
+      else if (act === "csv") saveCsv(actBtn);
+      else if (act === "summarize") summarize(actBtn);
       return;
     }
     const copyBtn = e.target.closest("[data-copy]");
@@ -1835,7 +2241,12 @@
     }
   });
 
-  $("viewBtn").addEventListener("click", () => { view = view === "groups" ? "list" : "groups"; render(); });
+  $("viewSeg").addEventListener("click", (e) => {
+    const b = e.target.closest("[data-view]");
+    if (!b) return;
+    view = b.getAttribute("data-view");
+    render();
+  });
 
   // 단계 사다리의 버튼은 위임으로 받는다. 어떤 버튼이 있는지는 상태가 정한다.
   $("steps").addEventListener("click", (e) => {
@@ -2088,6 +2499,143 @@
     $("themeBtn").textContent = t === "light" ? "라이트" : t === "dark" ? "다크" : "테마";
   });
 
+  // ── LLM 층 (아티팩트에서만) ──────────────────────────────────────────
+  // 이 층은 없어도 도구가 온전히 돌아간다. claude.use 가 null 이면 관련
+  // 버튼이 아예 뜨지 않는다 — GitHub Pages 에서는 그렇게 된다.
+  //
+  // 전송 원칙: 경로는 보내지 않는다. 경로에는 프로젝트명·거래처명·사람
+  // 이름이 들어 있다. 집계 수치와 **파일 이름만**, 그리고 사용자가 누를 때만.
+  let sampleFn = null;
+
+  function mountLlm() {
+    const slot = $("llmSlot");
+    if (!slot || !sampleFn) return;
+    slot.innerHTML = `<button class="btn sm" type="button" data-act="summarize">요약 만들기</button>`;
+  }
+
+  /** 보고서 요약. 경로 없이 집계 + 파일 이름만 보낸다. */
+  async function summarize(btn) {
+    if (!sampleFn) return;
+    const r = buildReport();
+    const box = document.createElement("div");
+    box.className = "summary-box";
+    box.textContent = "생각 중…";
+    btn.insertAdjacentElement("afterend", box);
+    btn.disabled = true;
+
+    const lines = [
+      "너는 파일 정리 보고서를 요약한다. 아래 집계와 '파일 이름' 목록만 보고",
+      "한국어 4~6문장으로 요약해라. 무엇을 먼저 정리하면 효과가 큰지, 버전 계열",
+      "중 사람이 확인해야 할 것이 무엇인지 짚어라. 전체 경로는 주어지지 않았으니",
+      "폴더를 추측하지 마라. 주어진 수치만 쓰고 새 숫자를 만들지 마라.",
+      "'중복'은 해시로 확정된 것이고 '버전 계열'은 이름 기반 추정이라는 차이를 지켜라.",
+      "",
+      `집계: 파일 ${r.files}개${r.hasMeta ? `, 총 ${human(r.totalBytes)}` : ", 크기 미수집"}`,
+      r.hasDup ? `중복 ${r.groups.length}묶음, 회수 가능 ${human(r.waste)}, 정리 후보 ${r.cutCount}개`
+               : "중복 검사는 아직 실행하지 않았다",
+      `버전 계열 추정 ${r.families.length}뭉치`,
+      r.stale.length ? `오래 안 쓴 대용량 ${r.stale.length}개, 합 ${human(r.staleBytes)}` : "",
+      "",
+      "낭비 상위 (파일 이름 / 회수량):",
+      ...r.groups.slice(0, 8).map((g) => `- ${index.names[g.keeper]} / ${human(g.waste)}`),
+      "",
+      "버전 계열 (계열 이름 / 파일 수 / 폴더 수):",
+      ...r.families.slice(0, 8).map((f) => `- ${f.stem}${f.ext ? "." + f.ext : ""} / ${f.members.length} / ${f.dirs}`),
+    ].filter(Boolean);
+
+    try {
+      await sampleFn(lines.join("\n"), {
+        modelTier: "quick",
+        onText: ({ text }) => { box.textContent = text; },
+      });
+    } catch (err) {
+      const code = err && err.code;
+      if (code === "cancelled") { box.remove(); }
+      else if (code === "not_granted" || code === "unavailable") {
+        box.textContent = "요약을 쓸 수 없다. 보고서 내용은 그대로 유효하다.";
+      } else if (code === "rate_limited") {
+        box.textContent = "잠시 후 다시 눌러라 (요청이 몰렸다).";
+      } else {
+        box.textContent = err && err.text ? err.text : `요약에 실패했다 (${esc(String(code || "알 수 없는 오류"))}).`;
+      }
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  /** 적어 둔 말을 질의 문법으로 바꾼다. 보내는 것은 그 문장 하나뿐이다. */
+  async function naturalQuery() {
+    if (!sampleFn) return;
+    const raw = $("q").value.trim();
+    if (!raw) { setBanner("warn", "바꿀 말이 없다", "검색창에 찾고 싶은 것을 한국어로 적고 다시 눌러라."); return; }
+    const btn = $("nlBtn");
+    btn.disabled = true;
+    const old = btn.textContent;
+    btn.textContent = "변환 중";
+    try {
+      const res = await sampleFn.json(
+        [
+          "다음 요청을 파일 검색 질의로 바꿔라. 지원하는 문법은 이것뿐이다:",
+          "  맨 문자열 = 이름 부분일치(AND), *·? 글롭, 경로에 /나 \\ 포함 시 전체 경로 매칭,",
+          "  ext:확장자[,확장자], size:>10mb (kb/mb/gb/tb, 비교는 > >= < <= =),",
+          "  runcount:>3 (누적 사용 횟수), dup: (내용이 같은 짝이 있는 것만),",
+          "  file: / folder: (종류), !단어 (부정), \"공백 포함\"",
+          "날짜 조건은 지원하지 않는다. 지원하지 않는 조건은 query 에 넣지 말고 note 에 적어라.",
+          '{"query": "...", "note": "표현하지 못한 조건이 있으면 한국어로 한 문장, 없으면 빈 문자열"} 형식의 JSON 만 답해라.',
+          "",
+          `요청: ${raw}`,
+        ].join("\n"),
+        { modelTier: "quick" }
+      );
+      if (res && typeof res.query === "string" && res.query.trim()) {
+        $("q").value = res.query.trim();
+        if (view === "report") view = "list";
+        render();
+        setBanner("", "질의로 바꿨다",
+          `<code>${esc(raw)}</code> → <code>${esc(res.query.trim())}</code>` +
+          (res.note ? ` — ${esc(res.note)}` : ""));
+      } else {
+        setBanner("warn", "질의로 바꾸지 못했다", "찾고 싶은 것을 더 구체적으로 적어 보거나, 문법을 직접 써라.");
+      }
+    } catch (err) {
+      const code = err && err.code;
+      if (code !== "cancelled") {
+        setBanner("warn", "변환 실패",
+          code === "rate_limited" ? "요청이 몰렸다. 잠시 후 다시 눌러라."
+            : `${esc(String(code || "알 수 없는 오류"))} — 문법을 직접 써도 된다.`);
+      }
+    } finally {
+      btn.disabled = false;
+      btn.textContent = old;
+    }
+  }
+
+  $("nlBtn").addEventListener("click", naturalQuery);
+
+  async function saveCsv(btn) {
+    if (!downloads) {
+      setBanner("warn", "내보내기를 쓸 수 없다", "이 화면에서는 파일 저장이 중개되지 않는다. 표를 직접 복사해라.");
+      return;
+    }
+    btn.disabled = true;
+    const old = btn.textContent;
+    btn.textContent = "준비 중";
+    try {
+      const res = await downloads.save({ filename: "mfind_정리계획.csv", data: reportCsv() });
+      btn.textContent = res.status === "saved" ? "저장됨" : "전달됨";
+      setTimeout(() => { btn.textContent = old; }, 1400);
+    } catch (err) {
+      const code = err && err.code;
+      btn.textContent = code === "declined" ? old : "실패";
+      if (code && code !== "declined") {
+        setBanner("warn", "내보내지 못했다", esc(String((err && err.message) || code)));
+      }
+      setTimeout(() => { btn.textContent = old; }, 1400);
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
   // ─────────────────────────────────────────────────────────────── 부팅
   // 첫 프레임은 어떤 비동기 작업도 기다리지 않는다. 예시 트리를 즉시 그린
   // 다음, 저장된 인덱스가 있으면 그때 갈아끼운다.
@@ -2103,10 +2651,16 @@
   (async () => {
     try {
       if (window.claude && typeof window.claude.use === "function") {
-        downloads = await window.claude.use("downloads");
-        if (downloads) render();
+        const [dl, sm] = await Promise.all([
+          window.claude.use("downloads").catch(() => null),
+          window.claude.use("sample").catch(() => null),
+        ]);
+        downloads = dl;
+        sampleFn = sm;
+        $("nlBtn").hidden = !sampleFn;
+        if (downloads || sampleFn) render();
       }
-    } catch { downloads = null; }
+    } catch { downloads = null; sampleFn = null; }
   })();
 
   (async () => {
@@ -2160,6 +2714,13 @@
       Index, scanNames, fillMetadata, findDuplicates,
       parseQuery, matches, cheapPrefilter,
       missionStart, missionStop, missionDraw, MOON_KM,
+      pickKeeper, versionFamilies, baseStem, buildReport, reportCsv, record,
+      setDup: (groups) => {
+        dupGroups = groups;
+        dupTags.clear();
+        groups.forEach((g, gi) => g.members.forEach((m) => dupTags.set(m, gi + 1)));
+        funnelState = { done: true, s1: 0, s2: 0, s3: 0, waste: 0, read: 0, hashed: 0, errors: [] };
+      },
       FLAG_DIR, NO_PARENT, UNKNOWN,
       setIndex: (ix) => { index = ix; },
       getIndex: () => index,

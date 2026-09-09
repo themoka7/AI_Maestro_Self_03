@@ -111,6 +111,69 @@ const expect = new Map([
   M.missionStop();
   ok(document.getElementById("mission").hidden === true, "미션 뷰가 끝나면 숨는다");
 
+  // ── 판단 로직: 근거가 규칙과 맞아야 한다 ──────────────────────────
+  {
+    const ix = new M.Index();
+    const root = ix.push("D:\\", M.NO_PARENT, M.FLAG_DIR, M.UNKNOWN, 0);
+    const docs = ix.push("문서", root, M.FLAG_DIR, M.UNKNOWN, 0);
+    const bk = ix.push("백업", root, M.FLAG_DIR, M.UNKNOWN, 0);
+    const deep = ix.push("더깊은", bk, M.FLAG_DIR, M.UNKNOWN, 0);
+    const a = ix.push("보고서.hwp", docs, 0, 2048, 5000);
+    const b = ix.push("보고서_사본.hwp", bk, 0, 2048, 9000);
+    const c = ix.push("보고서_복사본.hwp", deep, 0, 2048, 9000);
+    M.setIndex(ix);
+
+    // 규칙 1: 빈도가 가장 높은 것 (mtime 이 더 낮아도 이긴다)
+    M.record(ix.path(a), 0); M.record(ix.path(a), 0);
+    let k = M.pickKeeper([a, b, c]);
+    ok(k.keeper === a, `빈도 규칙: ${ix.names[k.keeper]} (기대 보고서.hwp)`);
+    ok(/사용 2회/.test(k.why), `근거가 규칙과 일치: "${k.why}"`);
+
+    // 규칙 2: 빈도 동률이면 최근 수정
+    k = M.pickKeeper([b, c]);
+    ok(index_mt_tie(ix, k), `동률 시 최신/짧은 경로로 갈린다: ${ix.names[k.keeper]} — "${k.why}"`);
+  }
+
+  function index_mt_tie(ix, k) {
+    // b·c 는 mtime 도 같으므로 규칙 3(짧은 경로)이 결정해야 한다
+    return /경로가 가장 짧다/.test(k.why);
+  }
+
+  // ── 버전 계열: 오탐이 가장 위험하다 ───────────────────────────────
+  {
+    const same = ["사업계획_최종.hwp", "사업계획_최종_v2.hwp", "사업계획_진짜최종.hwp",
+                  "사업계획 (1).hwp", "사업계획_복사본.hwp"];
+    const keys = same.map((n) => M.baseStem(n).key);
+    ok(new Set(keys).size === 1, `버전 표식 제거로 한 계열: ${JSON.stringify([...new Set(keys)])}`);
+
+    // 오탐 방어 — 이건 서로 다른 문서다
+    const diff = ["Chapter_1.docx", "Chapter_2.docx", "3장.docx"];
+    const dk = diff.map((n) => M.baseStem(n).key);
+    ok(new Set(dk).size === diff.length, `번호가 다른 별개 문서는 안 묶인다: ${JSON.stringify(dk)}`);
+
+    // 확장자가 다르면 다른 계열
+    ok(M.baseStem("계획_최종.hwp").key !== M.baseStem("계획_최종.pdf").key, "확장자가 다르면 별개 계열");
+  }
+
+  // ── CSV: 제출 산출물이므로 형식이 정확해야 한다 ───────────────────
+  {
+    const ix = new M.Index();
+    const root = ix.push("D:\\", M.NO_PARENT, M.FLAG_DIR, M.UNKNOWN, 0);
+    const x = ix.push("a,쉼표.txt", root, 0, 100, 3000);
+    const y = ix.push("b.txt", root, 0, 100, 2000);
+    const z = ix.push("c.txt", root, 0, 100, 1000);
+    M.setIndex(ix);
+    M.setDup([{ hash: "deadbeef", size: 100, members: [x, y, z], waste: 200 }]);
+    const csv = M.reportCsv();
+    ok(csv.charCodeAt(0) === 0xfeff, "BOM 이 붙는다 (엑셀 한글)");
+    const rows = csv.replace(/^\uFEFF/, "").trim().split("\r\n");
+    ok(rows.length === 4, `헤더 1 + 3행 = ${rows.length}`);
+    ok(rows[0] === "조치,경로,크기(바이트),묶음,근거", `헤더: ${rows[0]}`);
+    ok(rows.filter((r) => r.startsWith("남김")).length === 1, "남김은 묶음당 하나");
+    ok(rows.filter((r) => r.startsWith("정리")).length === 2, "정리는 나머지 전부");
+    ok(csv.includes('"D:\\a,쉼표.txt"'), "쉼표 든 경로가 따옴표로 감싸진다");
+  }
+
   document.title = "SELFTEST:" + out.join(" | ");
   console.log(out.join("\n"));
 })().catch((e) => {
