@@ -78,6 +78,10 @@
     font-size: 14px;
     line-height: 1.5;
     -webkit-font-smoothing: antialiased;
+    /* 한글은 기본 규칙이 어절을 무시하고 아무 데서나 끊는다. 경로처럼
+       끊어야 하는 것들은 각자 break-all 을 따로 지정한다. */
+    word-break: keep-all;
+    overflow-wrap: break-word;
   }
   button, input, select { font: inherit; color: inherit; }
   :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 2px; }
@@ -263,6 +267,29 @@
   }
   .rowacts button:hover { color: var(--accent); border-color: var(--line); }
 
+  /* 첫 실행 — 가짜 데이터를 한 줄도 넣지 않고 스스로를 설명한다.
+     이 도구의 결과는 "내 컴퓨터의 경로" 라서, 남의 경로를 예시로 깔면
+     검색 결과처럼 보여 오히려 해롭다. */
+  .first { padding: 40px 26px 34px; max-width: 62ch; margin: 0 auto; }
+  .first h3 {
+    margin: 0 0 6px; font-family: var(--cond); font-weight: 700;
+    font-size: 19px; letter-spacing: -.01em; text-wrap: balance;
+  }
+  .first > p { margin: 0 0 20px; color: var(--muted); font-size: 13px; }
+  .first ol { list-style: none; margin: 0 0 22px; padding: 0; display: flex; flex-direction: column; }
+  .first li {
+    display: grid; grid-template-columns: 1.4em 8.5em 1fr; gap: 3px 10px;
+    align-items: baseline; padding: 9px 0; border-top: 1px solid var(--line-soft);
+  }
+  .first li:last-child { border-bottom: 1px solid var(--line-soft); }
+  .first li .n { font-family: var(--mono); color: var(--accent); font-size: 13px; }
+  .first li .k { font-family: var(--cond); font-weight: 700; font-size: 13.5px; }
+  .first li .v { font-size: 12.5px; color: var(--ink-2); }
+  .first li .c { grid-column: 2 / -1; font-size: 11.5px; color: var(--faint); }
+  .first .go { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 18px; }
+  .first .fine { margin: 0; font-size: 11.5px; color: var(--faint); line-height: 1.6; }
+  .first .fine code { font-family: var(--mono); }
+
   .empty { padding: 44px 20px; text-align: center; color: var(--muted); }
   .empty p { margin: 0 0 6px; }
   .empty code { font-family: var(--mono); font-size: 12.5px; color: var(--ink-2); }
@@ -320,7 +347,9 @@
   .lad .gives b { color: var(--ink); font-weight: 500; }
   .lad .meta {
     font-size: 11.5px; color: var(--faint); font-family: var(--mono);
-    word-break: break-all;
+    /* 경로가 들어올 수도 산문이 들어올 수도 있다. anywhere 는 안 들어갈 때만
+       끊으므로 둘 다 맞다 (break-all 은 한글 어절을 아무 데서나 끊는다). */
+    word-break: keep-all; overflow-wrap: anywhere;
   }
   .lad .act { margin-top: 6px; display: flex; gap: 6px; flex-wrap: wrap; }
 
@@ -381,10 +410,7 @@
     <button class="theme-btn" id="themeBtn" type="button">테마</button>
   </header>
 
-  <div class="banner" id="banner">
-    <b>예시 데이터</b>
-    <span>아래는 동작을 보여 주기 위한 가짜 트리다. 왼쪽 <b>① 폴더 선택</b>을 누르면 실제 디스크로 바뀐다.</span>
-  </div>
+  <div class="banner" id="banner" hidden></div>
 
   <div class="controls">
     <div class="searchrow">
@@ -1321,7 +1347,9 @@
         : "Chrome·Edge 에서 폴더 하나를 고른다",
       acts: ph === 1 ? [{ act: "cancel", label: "중단" }]
         : busy ? []
-        : [{ act: "pick", label: hasIndex ? "다시 인덱싱" : "폴더 선택", primary: !hasIndex }],
+        : [{ act: "pick", label: hasIndex ? "다시 인덱싱" : "폴더 선택", primary: !hasIndex }]
+            .concat(demo ? [{ act: "nodemo", label: "예시 끄기" }]
+                  : index.n === 0 ? [{ act: "demo", label: "예시 보기" }] : []),
     });
 
     const two = lad({
@@ -1408,6 +1436,12 @@
       renderProgress(progress);
     } else {
       $("idxTitle").textContent = "인덱스";
+      if (index.n === 0) {
+        $("idxBody").innerHTML =
+          `<p class="hint" style="padding:0">아직 없다. <b>①</b> 을 실행하면 여기에 항목 수와 메모리가 나온다.</p>`;
+        renderSteps();
+        return;
+      }
       const st = scanStats;
       const rows = [
         ["항목", num(index.n), "big"],
@@ -1499,8 +1533,29 @@
     }
 
     if (!hits.length) {
+      const supported = !!window.showDirectoryPicker;
       el.innerHTML = index.n === 0
-        ? `<div class="empty"><p>왼쪽 <b>① 폴더 선택</b>으로 시작해라.</p><p>Chrome·Edge 만 지원한다.</p></div>`
+        ? `<div class="first">
+             <h3>이름으로 파일을 찾고, 이름이 달라도 내용이 같은 파일을 묶는다</h3>
+             <p>폴더를 한 번 허용하면 인덱싱·검색·중복 탐지가 전부 이 브라우저 안에서 돈다.</p>
+             <ol>
+               <li><span class="n">①</span><span class="k">폴더 인덱싱</span><span class="v">이름으로 검색</span>
+                   <span class="c">트리만 훑는다. 폴더당 왕복 한 번 — 가장 빠르다.</span></li>
+               <li><span class="n">②</span><span class="k">크기·시각 읽기</span><span class="v">크기 정렬·필터, ③ 의 전제</span>
+                   <span class="c">파일을 하나씩 열어야 한다. 가장 오래 걸리는 단계다.</span></li>
+               <li><span class="n">③</span><span class="k">중복 찾기</span><span class="v">이름이 달라도 같은 내용</span>
+                   <span class="c">크기 → 앞 16KiB → 전체 해시. 지금 검색 결과 안에서만 돈다.</span></li>
+             </ol>
+             <div class="go">
+               ${supported ? `<button class="btn primary" type="button" data-act="pick">폴더 선택</button>` : ""}
+               <button class="btn" type="button" data-act="demo">예시로 둘러보기</button>
+             </div>
+             <p class="fine">
+               ${supported
+                 ? `파일 내용도 경로도 어디로도 전송되지 않는다. 인덱스와 사용 기록은 이 브라우저의 IndexedDB 에만 남는다.`
+                 : `<b>이 브라우저에서는 폴더를 열 수 없다.</b> <code>showDirectoryPicker</code> 가 없다 — Chrome 또는 Edge 가 필요하다. 그 전까지는 예시로 동작만 볼 수 있다.`}
+             </p>
+           </div>`
         : `<div class="empty"><p>일치하는 항목이 없다.</p><p>질의: <code>${esc($("q").value) || "(비어 있음)"}</code></p></div>`;
       return;
     }
@@ -1544,17 +1599,20 @@
 
   function render() {
     const hits = search();
-    $("rCount").textContent = view === "groups"
-      ? `${num(dupGroups.length)}개 묶음`
+    const bare = index.n === 0;
+    $("rCount").textContent = bare ? ""
+      : view === "groups" ? `${num(dupGroups.length)}개 묶음`
       : `${num(hits.length)}건${hits.length > 300 ? " · 300건 표시" : ""}`;
-    $("rTitle").textContent = view === "groups" ? "중복 묶음" : "검색 결과";
+    $("rTitle").textContent = bare ? "시작하기"
+      : view === "groups" ? "중복 묶음" : "검색 결과";
     const notes = [];
-    if (view !== "groups") {
+    if (!bare && view !== "groups") {
       if (index.metaCount === 0) notes.push("크기·수정일은 ② 를 실행하면 나온다");
       else if (!(funnelState && funnelState.done)) notes.push("중복 표시는 ③ 을 실행하면 나온다");
     }
     $("rNote").textContent = notes.join(" · ");
     $("viewBtn").textContent = view === "groups" ? "목록으로 보기" : "묶음으로 보기";
+    $("viewBtn").hidden = bare;
     renderRows(hits);
     renderRail();
   }
@@ -1568,6 +1626,12 @@
   $("sort").addEventListener("change", render);
 
   $("rows").addEventListener("click", async (e) => {
+    const actBtn = e.target.closest("[data-act]");
+    if (actBtn) {
+      if (actBtn.getAttribute("data-act") === "pick") pickFolder();
+      else if (actBtn.getAttribute("data-act") === "demo") loadDemo();
+      return;
+    }
     const copyBtn = e.target.closest("[data-copy]");
     if (copyBtn) {
       const path = copyBtn.getAttribute("data-copy");
@@ -1623,6 +1687,8 @@
       case "pick": pickFolder(); break;
       case "meta": runMetadata(); break;
       case "dup": runDup(); break;
+      case "demo": loadDemo(); break;
+      case "nodemo": exitDemo(); break;
       case "cancel": cancelScan = true; break;
     }
   });
@@ -1663,6 +1729,42 @@
       childCount: index.childCount.slice(0, index.n),
       n: index.n,
     }).catch(() => false);
+  }
+
+  /**
+   * 예시 데이터는 기본이 아니라 요청했을 때만 올린다.
+   * 이 도구의 결과는 "내 컴퓨터의 경로" 라서, 남의 경로를 첫 화면에 깔면
+   * 검색 결과처럼 보여 오히려 해롭다.
+   */
+  async function loadDemo() {
+    if (scanning || dupBusy) return;
+    index = buildDemo();
+    seedDemoUsage();
+    dupTags.clear(); dupGroups = []; funnelState = null; scanStats = null;
+    rootHandle = null;
+    view = "list";
+    $("q").value = "file:";
+    setBanner("warn", "예시 데이터",
+      `당신의 파일이 아니다 — 동작을 보여 주기 위한 가짜 트리다. ` +
+      `<button class="btn sm" type="button" data-act="nodemo">예시 끄기</button>`);
+    render();
+    // 실제 파일이 없어 해싱이 즉시 끝난다. ③ 결과까지 채워서 보여 준다.
+    const ids = [];
+    for (let i = 0; i < index.n; i++) if (!index.isDir(i)) ids.push(i);
+    try {
+      await findDuplicates(ids, (pr) => { funnelState = pr; });
+      if (index.demo) render();
+    } catch { /* 예시 표시가 실패해도 나머지는 그대로 쓴다 */ }
+  }
+
+  function exitDemo() {
+    index = new Index();
+    usage.clear();
+    dupTags.clear(); dupGroups = []; funnelState = null; scanStats = null;
+    view = "list";
+    $("q").value = "";
+    setBanner("", "예시를 껐다", "왼쪽 <b>①</b> 로 실제 폴더를 인덱싱해라.");
+    render();
   }
 
   /** ① 이름 인덱싱. 크기는 건드리지 않는다 — 그건 ② 가 따로 한다. */
@@ -1796,16 +1898,23 @@
     funnelState = null; scanStats = null; rootHandle = null;
     await kvSet("index", null); await kvSet("usage", null);
     await kvSet("hashes", null); await kvSet("rootHandle", null);
-    index = buildDemo(); seedDemoUsage();
+    index = new Index();
     view = "list"; $("q").value = "";
-    setBanner("", "초기화됨", "저장된 인덱스·빈도·해시 캐시를 지웠다. 다시 예시 데이터를 보여 준다.");
+    setBanner("", "초기화됨", "저장된 인덱스·빈도·해시 캐시를 지웠다.");
     render();
+  });
+
+  $("banner").addEventListener("click", (e) => {
+    const b = e.target.closest("[data-act]");
+    if (!b) return;
+    if (b.getAttribute("data-act") === "nodemo") exitDemo();
   });
 
   function setBanner(kind, title, html) {
     const b = $("banner");
     b.className = "banner" + (kind ? " " + kind : "");
     b.innerHTML = `<b>${esc(title)}</b><span>${html}</span>`;
+    b.hidden = false;
   }
 
   // 테마 토글 — 시스템 → 라이트 → 다크 순환
@@ -1826,22 +1935,9 @@
   $("capNote").innerHTML = supported
     ? `<b>이 브라우저는 지원된다.</b> <code>showDirectoryPicker</code> 사용 가능. 폴더를 한 번 허용하면 그 핸들이 IndexedDB 에 남지만, 세션마다 권한을 다시 확인해야 한다.`
     : `<b>이 브라우저는 지원되지 않는다.</b> <code>showDirectoryPicker</code> 가 없다 — Chrome 또는 Edge 로 열어야 실제 디스크를 읽을 수 있다. 아래 예시 데이터로 동작만 볼 수 있다.`;
-  index = buildDemo();
-  seedDemoUsage();
-  $("q").value = "file:";     // 디렉터리를 빼야 중복 칩이 첫 화면에 보인다
+  // 첫 화면은 비어 있다. 저장된 인덱스가 있으면 아래 비동기에서 채운다.
+  index = new Index();
   render();
-
-  // 예시 트리는 실제 파일이 없으니 해싱이 즉시 끝난다. 첫 화면부터
-  // 중복 칩과 퍼널 판독값이 채워져 있어야 뭘 하는 도구인지 보인다.
-  (async () => {
-    if (!index.demo) return;
-    const ids = [];
-    for (let i = 0; i < index.n; i++) if (!index.isDir(i)) ids.push(i);
-    try {
-      await findDuplicates(ids, (p) => { funnelState = p; });
-      if (index.demo) render();
-    } catch { /* 예시 표시가 실패해도 검색은 그대로 쓴다 */ }
-  })();
 
   // 능력은 첫 렌더 뒤에 도착하고, 아예 안 올 수도 있다.
   (async () => {
@@ -1862,7 +1958,16 @@
     } catch { /* 저장소를 못 쓰면 예시 상태로 계속 간다 */ }
     if (Array.isArray(savedHashes)) for (const [k, v] of savedHashes) hashCache.set(k, v);
 
-    // v1 로 저장된 인덱스는 자식 범위가 없어 2 단계를 못 돈다. 새로 훑게 한다.
+    if (savedIndex && savedIndex.v !== 2 && savedIndex.n > 0) {
+      // v1 에는 자식 범위가 없어 ② 를 돌릴 수 없다. 조용히 예시로 떨어지면
+      // 사용자는 인덱싱한 것이 어디 갔는지 알 수 없다 — 명시적으로 알린다.
+      setBanner("warn", "저장된 인덱스를 쓸 수 없다",
+        `이전 형식(항목 ${num(savedIndex.n)}개)이라 지금 버전과 맞지 않는다. ` +
+        `왼쪽 <b>①</b> 로 다시 인덱싱해라 — 이번에는 훨씬 빠르다.`);
+      kvSet("index", null).catch(() => {});
+      render();
+      return;
+    }
     if (savedIndex && savedIndex.v === 2 && savedIndex.n > 0) {
       const ix = new Index(Math.max(4096, savedIndex.n));
       ix.names = savedIndex.names;
