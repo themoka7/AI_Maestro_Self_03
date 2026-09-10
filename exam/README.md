@@ -1,16 +1,22 @@
-# 기출문제 처리기
+# 기출문제 처리기 — 구현 노트
 
-**문제지 파일을 `exam/papers/` 에 올리면, 밀어 넣은 그 순간 알아서 처리한다.**
+무엇을 하는 도구이고 어떻게 올리는지는 [최상위 README](../README.md) 에 있다.
+여기는 **파싱과 파이프라인의 세부**다.
+
+**문제지 파일을 `exam/papers/` 에 올리면, 올린 그 순간 알아서 처리한다.**
 사람이 스크립트를 돌리지 않는다.
 
 ```
-exam/papers/ 에 PDF·HWP 를 push
-        ↓  (GitHub Actions 가 push 를 신호로 깨어난다)
-   문항 추출  →  열람용 HTML 생성  →  결과 확인  →  결과를 레포에 되커밋
+exam/papers/ 에 PDF·HWP 업로드 (브라우저 Add file → Upload files, 또는 git push)
+        ↓  GitHub Actions 가 그 업로드를 신호로 깨어난다
+ 파서 점검 → 문항 추출 → 열람용 HTML → 결과 확인 → 결과 보고 → 레포에 되커밋
         ↓
 exam/out/questions.json   기계가 읽는 구조화 데이터
 exam/out/index.html       사람이 보는 페이지 (검색·교시 필터)
+Actions 실행 요약          회차별 문항 수와 경고가 담긴 표
 ```
+
+브라우저 업로드도 push 를 만들기 때문에 **git 없이도 같은 경로로 동작한다.**
 
 ## 왜 이 형태인가
 
@@ -85,8 +91,11 @@ HWP 는 안내문을 못 찾으므로 **문항 번호가 1로 되돌아가는 �
 
 ```sh
 pip install pypdf pyhwp six olefile      # HWP 를 안 쓰면 pypdf 만으로 충분
+
+python3 exam/tools/selftest.py           # 파서 점검 — 문제지 없이 된다
 python3 exam/tools/extract.py            # exam/papers → exam/out/questions.json
 python3 exam/tools/render.py             # questions.json → exam/out/index.html
+python3 exam/tools/summary.py            # 결과를 마크다운 표로 (Actions 요약과 같은 것)
 ```
 
 | 옵션 | 뜻 |
@@ -103,6 +112,15 @@ python3 exam/tools/render.py             # questions.json → exam/out/index.htm
 28개 회차(110~139회, 112·115회 미보유)를 넣어 **868문항**(1교시 364 + 논술형 504)을
 경고 없이 추출했다. 열람용 HTML 은 표준 모드로 렌더링되고 검색·교시 필터가 동작하며
 휴대폰 폭에서 가로 스크롤이 생기지 않는다.
+
+**저작권 자료라 문제지는 레포에 담지 않았다.** 그래서 위 수치는 로컬에서 확인한
+것이고, 레포의 `questions.json` 은 누군가 올리기 전까지 비어 있다.
+
+문제지가 없는 동안 파서가 조용히 망가지면 그대로 빈 결과가 커밋된다. 그걸 막으려고
+`tools/selftest.py` 가 **합성 문제지 두 양식**으로 파싱을 검증한다 — 문항 경계, 교시
+분리, 안내문·쪽번호가 문항에 안 섞이는지, 별지가 참조 문항에 붙는지, 파일명에서
+회차·연도를 읽는 규칙. 워크플로가 추출 **전에** 이걸 돌리므로 파서가 깨진 채로는
+결과가 커밋되지 않는다.
 
 ## 하지 않는 것
 

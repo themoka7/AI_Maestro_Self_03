@@ -1,3 +1,7 @@
 /target
 *.exe
 *.pdb
+
+# 파이썬 바이트코드 — selftest 가 extract 를 import 하면 생긴다
+__pycache__/
+*.pyc
