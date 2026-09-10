@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>기출문제 모음</title>
+<style>
+:root{--paper:#eef1f4;--surface:#fff;--surface2:#f7f9fb;--ink:#16233a;--muted:#5d6b7a;
+  --faint:#8996a5;--rule:#c9d2dc;--soft:#e0e6ec;--mark:#b83227;--mark-bg:#f6e7e4}
+@media(prefers-color-scheme:dark){:root{--paper:#0f141a;--surface:#171d25;--surface2:#1e252e;
+  --ink:#e3e9f0;--muted:#96a3b1;--faint:#6f7d8b;--rule:#2d3844;--soft:#242d37;
+  --mark:#ea7565;--mark-bg:#2e211f}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);line-height:1.7;
+  font-family:system-ui,-apple-system,"Segoe UI","Noto Sans KR",sans-serif;font-size:14px}
+.wrap{max-width:900px;margin:0 auto;padding-inline:16px;padding-block:28px 64px}
+h1{font-size:22px;margin:0 0 6px}
+.sub{color:var(--muted);font-size:13.5px;margin:0 0 22px}
+.bar{position:sticky;top:0;z-index:5;background:var(--paper);padding-block:10px;
+  border-bottom:1px solid var(--soft);display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+input[type=search]{flex:1;min-width:180px;font:inherit;font-size:13.5px;color:var(--ink);
+  background:var(--surface);border:1px solid var(--rule);border-radius:6px;padding:7px 10px}
+select{font:inherit;font-size:13px;color:var(--ink);background:var(--surface);
+  border:1px solid var(--rule);border-radius:6px;padding:7px 8px}
+.count{font-size:12px;color:var(--faint);margin-left:auto;
+  font-variant-numeric:tabular-nums;white-space:nowrap}
+.paper{margin:26px 0 0}
+.paper h2{font-size:16px;margin:0 0 4px;display:flex;flex-wrap:wrap;gap:4px 10px;align-items:baseline}
+.meta{font-size:11px;color:var(--faint);font-weight:400;font-variant-numeric:tabular-nums}
+.est{border:1px solid var(--soft);border-radius:2px;padding:0 3px;margin-left:3px}
+.gy{font-size:11px;letter-spacing:.06em;color:var(--mark);background:var(--mark-bg);
+  border-radius:3px;padding:2px 7px;display:inline-block;margin:14px 0 6px}
+ol{list-style:none;counter-reset:q;margin:0;padding:0;background:var(--surface);
+  border:1px solid var(--soft);border-radius:8px;overflow:hidden}
+li{counter-increment:q;position:relative;margin:0;padding:10px 14px 10px 40px;
+  border-bottom:1px solid var(--soft);font-size:13.5px}
+li:last-child{border-bottom:0}
+li::before{content:counter(q) ".";position:absolute;left:14px;top:10px;
+  font-size:11.5px;color:var(--faint);font-variant-numeric:tabular-nums}
+li[hidden]{display:none}
+.subs{display:block;margin-top:5px}
+.subs span{display:block;font-size:12.5px;color:var(--muted)}
+.subs b{color:var(--mark);font-weight:500;margin-right:4px}
+.spec{display:block;margin-top:6px;padding:8px 10px;background:var(--surface2);
+  border-left:2px solid var(--rule);border-radius:0 4px 4px 0;
+  font-size:12px;color:var(--muted);white-space:pre-wrap}
+.empty{padding:26px 0;color:var(--faint);font-size:13.5px}
+footer{margin-top:40px;padding-top:16px;border-top:1px solid var(--soft);
+  color:var(--faint);font-size:12px}
+</style>
+</head>
+<body>
+<div class="wrap">
+<h1>기출문제 모음</h1>
+<p class="sub">0개 회차 · 1교시 0문항 + 논술형 0문항 = 총 0문항</p>
+<div class="bar"><input type="search" id="q" placeholder="문항 검색 (예: RAG, 가명처리)"><select id="gy"><option value="all">전체 교시</option><option value="1">1교시</option><option value="2">2교시</option><option value="3">3교시</option><option value="4">4교시</option></select><span class="count" id="count"></span></div>
+</div>
+<script>
+(function(){
+  var q=document.getElementById('q'), sel=document.getElementById('gy'),
+      out=document.getElementById('count'),
+      items=[].slice.call(document.querySelectorAll('li[data-t]'));
+  function apply(){
+    var term=q.value.trim().toLowerCase(), want=sel.value, shown=0;
+    items.forEach(function(li){
+      var ok=(want==='all'||li.dataset.g===want) &&
+             (!term||li.dataset.t.indexOf(term)>=0);
+      li.hidden=!ok; if(ok) shown++;
+    });
+    document.querySelectorAll('[data-group]').forEach(function(box){
+      box.hidden=!box.querySelector('li:not([hidden])');
+    });
+    out.textContent=shown+' / '+items.length+'문항';
+  }
+  q.addEventListener('input',apply); sel.addEventListener('change',apply); apply();
+})();
+</script>
+</body>
+</html>
