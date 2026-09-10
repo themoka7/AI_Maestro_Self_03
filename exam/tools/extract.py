@@ -190,6 +190,12 @@ def process(path: str) -> tuple[str, dict, list[str]]:
     return round_no, paper, warnings
 
 
+def write_result(path: str, papers: dict) -> None:
+    os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
+    with open(path, "w", encoding="utf-8") as fp:
+        json.dump({"papers": papers}, fp, ensure_ascii=False, indent=1, sort_keys=True)
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description="기출문제 파일에서 문항을 추출한다")
     ap.add_argument("--papers", default="exam/papers", help="문제지가 있는 디렉터리")
@@ -204,11 +210,13 @@ def main() -> int:
         m = re.search(r"(\d+)\s*회", os.path.basename(path))
         return (0, int(m.group(1))) if m else (1, 0)
     files.sort(key=round_key)
+    papers, failures, warned = {}, [], 0
     if not files:
-        print(f"{args.papers} 에 처리할 파일이 없다.")
+        # 빈 결과라도 남긴다. 여기서 그냥 끝내면 다음 단계가 없는 파일을 찾는다.
+        write_result(args.out, papers)
+        print(f"{args.papers} 에 처리할 파일이 없다 — 빈 결과를 남긴다.")
         return 0
 
-    papers, failures, warned = {}, [], 0
     for path in files:
         try:
             round_no, paper, warnings = process(path)
@@ -223,9 +231,7 @@ def main() -> int:
         print(f"  {round_no}회  1교시 {len(paper['period1']):2d}문항 · 논술형 {essay_count:2d}문항"
               f"{'  (교시 추정)' if paper['gyosi_estimated'] else ''}{mark}")
 
-    os.makedirs(os.path.dirname(args.out) or ".", exist_ok=True)
-    with open(args.out, "w", encoding="utf-8") as fp:
-        json.dump({"papers": papers}, fp, ensure_ascii=False, indent=1, sort_keys=True)
+    write_result(args.out, papers)
 
     total = sum(len(p["period1"]) + sum(len(b["items"]) for b in p["essay"])
                 for p in papers.values())

@@ -49,8 +49,7 @@ jobs:
           grep -q 'name="viewport"' exam/out/index.html
           python3 -c "import json;d=json.load(open('exam/out/questions.json'));\
           n=len(d['papers']);q=sum(len(p['period1'])+sum(len(b['items']) for b in p['essay']) for p in d['papers'].values());\
-          print(f'{n}개 회차 {q}문항');\
-          exit(0 if n else 1)"
+          print(f'{n}개 회차 {q}문항' if n else '문제지가 아직 없다 — exam/papers/ 에 올리면 처리한다')"
 
       # 바뀐 게 없으면 커밋하지 않는다 — 빈 커밋으로 이력을 어지럽히지 않는다.
       - name: 결과 커밋
