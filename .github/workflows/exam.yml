@@ -1,0 +1,69 @@
+name: 기출문제 처리
+
+# exam/papers/ 에 문제지가 올라오면 그때 깨어난다. 사람이 누르지 않는다.
+on:
+  push:
+    branches: [main]
+    paths:
+      - "exam/papers/**"
+      - "exam/tools/**"
+      - ".github/workflows/exam.yml"
+  workflow_dispatch:
+
+# 결과물을 같은 레포에 되커밋하므로 쓰기 권한이 필요하다.
+permissions:
+  contents: write
+
+# 문제지를 연달아 올리면 마지막 것만 처리한다. 중간 결과를 커밋할 이유가 없다.
+concurrency:
+  group: exam
+  cancel-in-progress: true
+
+jobs:
+  process:
+    name: 문제지 → 문항 JSON · HTML
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # pypdf 는 PDF, pyhwp(hwp5txt) 는 HWP 를 읽는다.
+      # six·olefile 은 pyhwp 가 런타임에 쓰는데 의존성으로 끌고 오지 않는다.
+      - name: 의존성 설치
+        run: pip install --quiet pypdf pyhwp six olefile
+
+      - name: 문항 추출
+        run: python3 exam/tools/extract.py --papers exam/papers --out exam/out/questions.json
+
+      - name: 열람용 HTML 생성
+        run: python3 exam/tools/render.py --data exam/out/questions.json --out exam/out/index.html
+
+      # 렌더만 되는 것과 쓸 수 있는 것은 다르다. 문서가 온전한지 확인하고
+      # 나서 커밋한다 — charset 이 없으면 한글이 깨지고, viewport 가 없으면
+      # 휴대폰에서 데스크톱 폭으로 축소된다.
+      - name: 결과 확인
+        run: |
+          test -s exam/out/questions.json
+          test -s exam/out/index.html
+          head -c 15 exam/out/index.html | grep -qi '<!doctype html>'
+          grep -q '<meta charset="utf-8">' exam/out/index.html
+          grep -q 'name="viewport"' exam/out/index.html
+          python3 -c "import json;d=json.load(open('exam/out/questions.json'));\
+          n=len(d['papers']);q=sum(len(p['period1'])+sum(len(b['items']) for b in p['essay']) for p in d['papers'].values());\
+          print(f'{n}개 회차 {q}문항');\
+          exit(0 if n else 1)"
+
+      # 바뀐 게 없으면 커밋하지 않는다 — 빈 커밋으로 이력을 어지럽히지 않는다.
+      - name: 결과 커밋
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add exam/out
+          if git diff --cached --quiet; then
+            echo "변경 없음 — 커밋하지 않는다"
+            exit 0
+          fi
+          SUMMARY=$(python3 -c "import json;d=json.load(open('exam/out/questions.json'));\
+          n=len(d['papers']);q=sum(len(p['period1'])+sum(len(b['items']) for b in p['essay']) for p in d['papers'].values());\
+          print(f'{n}개 회차 {q}문항')")
+          git commit -m "chore(exam): 문항 추출 결과 갱신 — $SUMMARY"
+          git push
